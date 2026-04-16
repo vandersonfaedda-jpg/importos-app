@@ -163,7 +163,7 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
-<div id="app-wrapper" style="display:none;position:fixed;inset:0">
+<div id="app-wrapper">
 <div class="app">
   <!-- Sidebar -->
   <div class="sidebar">
@@ -1285,8 +1285,7 @@ function limparSim(){
   Object.keys(chips).forEach(k=>{ chips[k]=false; document.getElementById('chip-'+k).classList.remove('on'); });
 }
 
-// Init — debug sem login
-loadDashboard();
+// Init — aguarda login
 
 // ===== SUGESTÃO AUTOMÁTICA DE MODAL =====
 
