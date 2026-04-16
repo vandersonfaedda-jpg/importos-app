@@ -141,7 +141,7 @@ select option{background:var(--surface2)}
 <body>
 
 <!-- TELA DE LOGIN -->
-<div id="tela-login" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999">
+<div id="tela-login" style="display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;z-index:9999">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;width:360px;max-width:90vw">
     <div style="font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px">importos</div>
     <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:28px">GLOBAL TRADE INTELLIGENCE</div>
@@ -163,7 +163,7 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
-<div id="app-wrapper" style="display:none;position:fixed;inset:0">
+<div id="app-wrapper">
 <div class="app">
   <!-- Sidebar -->
   <div class="sidebar">
@@ -1285,7 +1285,8 @@ function limparSim(){
   Object.keys(chips).forEach(k=>{ chips[k]=false; document.getElementById('chip-'+k).classList.remove('on'); });
 }
 
-// Init — não carrega dados aqui, espera o login
+// Init — debug sem login
+loadDashboard();
 
 // ===== SUGESTÃO AUTOMÁTICA DE MODAL =====
 
