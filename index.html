@@ -507,8 +507,8 @@ select option{background:var(--surface2)}
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Nome</th><th>NCM</th><th>Modal</th><th>Qtd</th><th>ROI</th><th>Score</th><th>Preço</th><th>Lucro total</th><th>Impostos</th><th>Status</th></tr></thead>
-            <tbody id="hist-table"><tr><td colspan="11"><div class="loading"><span class="spinner"></span>carregando...</div></td></tr></tbody>
+            <thead><tr><th>Data</th><th>Nome</th><th>NCM</th><th>Modal</th><th>Qtd</th><th>ROI</th><th>Score</th><th>Preço</th><th>Lucro total</th><th>Impostos</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="hist-table"><tr><td colspan="12"><div class="loading"><span class="spinner"></span>carregando...</div></td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1145,7 +1145,26 @@ async function loadHistorico(){
       <td style="color:${parseFloat(s.lucro_total)>=0?'var(--accent)':'var(--danger)'}">${fmtBRL(parseFloat(s.lucro_total)||0)}</td>
       <td style="color:var(--warn)">${fmtBRL(parseFloat(s.total_impostos)||0)}</td>
       <td><span class="badge badge-info">${s.status||'—'}</span></td>
-    </tr>`;}).join('') : '<tr><td colspan="11"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
+      <td><button class="btn btn-sm btn-danger" onclick="excluirSimulacao(${s.id})">✕</button></td>
+    </tr>`;}).join('') : '<tr><td colspan="12"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
+}
+
+async function excluirSimulacao(id){
+  if(!confirm('Excluir esta simulação?')) return;
+  try {
+    const r = await fetch(`${SUPA_URL}/functions/v1/importos-data`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({action:'delete', table:'simulacoes', id})
+    });
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.erro||'Erro ao excluir');
+    loadHistorico();
+    // Atualiza dashboard e ranking também
+    if(document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+    todasSimulacoes = todasSimulacoes.filter(s=>s.id!==id);
+    renderRanking(todasSimulacoes);
+  } catch(e){ alert('Erro ao excluir: '+e.message); }
 }
 
 // ---- Simulador ----
