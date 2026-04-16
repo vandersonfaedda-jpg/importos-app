@@ -221,13 +221,10 @@ select option{background:var(--surface2)}
     <!-- Dashboard -->
     <div class="page active" id="page-dashboard">
       <div class="page-title">Dashboard</div>
-      <div class="page-sub">Visão geral das simulações</div>
-
-      <!-- Métricas globais -->
-      <div class="metrics" id="dash-metrics"><div class="loading"><span class="spinner"></span>carregando...</div></div>
+      <div class="page-sub">Selecione uma simulação para ver análise detalhada por país</div>
 
       <!-- Layout: lista + detalhe -->
-      <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;margin-top:4px">
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
 
         <!-- Lista de simulações -->
         <div>
@@ -1027,49 +1024,19 @@ async function buscarPrecosMercado(nome, targetId){
 
 
 async function loadDashboard(){
-  document.getElementById('dash-metrics').innerHTML='<div class="loading" style="grid-column:1/-1"><span class="spinner"></span>conectando...</div>';
   document.getElementById('dash-lista').innerHTML='<div class="loading"><span class="spinner"></span>carregando...</div>';
   let data;
   try {
-    data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at,dados');
+    data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at');
   } catch(e) {
-    document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1;color:var(--danger)">Erro: ${e.message}</div>`;
     document.getElementById('dash-lista').innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px">Erro: ${e.message}</div>`;
     return;
   }
   if(!data||data.length===0){
-    document.getElementById('dash-metrics').innerHTML='<div class="empty" style="grid-column:1/-1">Nenhuma simulação encontrada</div>';
     document.getElementById('dash-lista').innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação salva ainda</div>';
     return;
   }
   todasSimulacoes = data;
-
-  // Métricas globais
-  const lucro = data.reduce((a,s)=>a+(parseFloat(s.lucro_total)||0),0);
-  const impostos = data.reduce((a,s)=>a+(parseFloat(s.total_impostos)||0),0);
-  const melhorRoi = Math.max(...data.map(s=>(parseFloat(s.roi)||0)*100));
-  const avgScore = Math.round(data.reduce((a,s)=>a+(s.score||0),0)/data.length);
-  document.getElementById('dash-metrics').innerHTML = `
-    <div class="metric ${lucro>=0?'green':'danger'}">
-      <div class="metric-label">lucro acumulado</div>
-      <div class="metric-val" style="color:${lucro>=0?'var(--accent)':'var(--danger)'}">${fmtBRL(lucro)}</div>
-      <div class="metric-sub">${data.length} simulações</div>
-    </div>
-    <div class="metric purple">
-      <div class="metric-label">melhor ROI</div>
-      <div class="metric-val" style="color:var(--accent2)">${fmtPct(melhorRoi)}</div>
-      <div class="metric-sub">simulação mais rentável</div>
-    </div>
-    <div class="metric warn">
-      <div class="metric-label">total impostos</div>
-      <div class="metric-val" style="color:var(--warn)">${fmtBRL(impostos)}</div>
-      <div class="metric-sub">II + IPI + ICMS + PIS/COFINS</div>
-    </div>
-    <div class="metric ${avgScore>=50?'green':avgScore>=25?'warn':'danger'}">
-      <div class="metric-label">score médio</div>
-      <div class="metric-val" style="color:${avgScore>=50?'var(--accent)':avgScore>=25?'var(--warn)':'var(--danger)'}">${avgScore}<span style="font-size:13px;color:var(--muted)">/100</span></div>
-      <div class="metric-sub">viabilidade geral</div>
-    </div>`;
 
   // Lista selecionável
   const medalhas = ['🥇','🥈','🥉','4º','5º','6º','7º','8º','9º','10º'];
@@ -1108,7 +1075,6 @@ function selecionarSimulacao(id){
   simSelecionada = todasSimulacoes.find(s=>s.id===id);
   if(!simSelecionada) return;
 
-  // Destaca item selecionado
   document.querySelectorAll('[id^="dash-item-"]').forEach(el=>{
     el.classList.remove('sel');
     el.style.borderColor='var(--border)';
@@ -1120,34 +1086,6 @@ function selecionarSimulacao(id){
     item.style.borderColor='var(--accent)';
     item.style.background='var(--surface2)';
   }
-
-  // Atualiza métricas para o item selecionado
-  const s = simSelecionada;
-  const roi = parseFloat(s.roi||0)*100;
-  const conf = calcularConfianca(s);
-  const scoreColor = (s.score||0)>=60?'var(--accent)':(s.score||0)>=35?'var(--warn)':'var(--danger)';
-  document.getElementById('dash-metrics').innerHTML = `
-    <div class="metric ${roi>=0?'green':'danger'}">
-      <div class="metric-label">ROI — ${s.nome||'produto'}</div>
-      <div class="metric-val" style="color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(2)}%</div>
-      <div class="metric-sub">${(s.modal||'').replace('maritimo_','').toUpperCase()} · ${Number(s.qtd||0).toLocaleString('pt-BR')} un</div>
-    </div>
-    <div class="metric green">
-      <div class="metric-label">lucro total</div>
-      <div class="metric-val" style="color:var(--accent)">${fmtBRL(parseFloat(s.lucro_total)||0)}</div>
-      <div class="metric-sub">preço sugerido ${fmtBRL(parseFloat(s.preco_sugerido)||0)}</div>
-    </div>
-    <div class="metric warn">
-      <div class="metric-label">impostos</div>
-      <div class="metric-val" style="color:var(--warn)">${fmtBRL(parseFloat(s.total_impostos)||0)}</div>
-      <div class="metric-sub">II + IPI + ICMS + PIS/COFINS</div>
-    </div>
-    <div class="metric ${(s.score||0)>=50?'green':(s.score||0)>=25?'warn':'danger'}">
-      <div class="metric-label">score de viabilidade</div>
-      <div class="metric-val" style="color:${scoreColor}">${s.score||0}<span style="font-size:13px;color:var(--muted)">/100</span></div>
-      <div class="metric-sub" style="color:${conf.color}">${conf.stars} ${conf.label}</div>
-    </div>`;
-
   renderDetalhe(simSelecionada);
 }
 
@@ -1157,45 +1095,46 @@ function renderDetalhe(s){
   const scoreColor = (s.score||0)>=60?'var(--accent)':(s.score||0)>=35?'var(--warn)':'var(--danger)';
 
   document.getElementById('dash-detalhe').innerHTML = `
+    <!-- Métricas do produto selecionado -->
+    <div class="metrics" style="margin-bottom:12px">
+      <div class="metric ${roi>=0?'green':'danger'}">
+        <div class="metric-label">ROI</div>
+        <div class="metric-val" style="color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(2)}%</div>
+        <div class="metric-sub">${(s.modal||'').replace('maritimo_','').toUpperCase()} · ${Number(s.qtd||0).toLocaleString('pt-BR')} un</div>
+      </div>
+      <div class="metric green">
+        <div class="metric-label">lucro total</div>
+        <div class="metric-val" style="color:var(--accent)">${fmtBRL(parseFloat(s.lucro_total)||0)}</div>
+        <div class="metric-sub">preço sugerido ${fmtBRL(parseFloat(s.preco_sugerido)||0)}</div>
+      </div>
+      <div class="metric warn">
+        <div class="metric-label">impostos</div>
+        <div class="metric-val" style="color:var(--warn)">${fmtBRL(parseFloat(s.total_impostos)||0)}</div>
+        <div class="metric-sub">II + IPI + ICMS + PIS/COFINS</div>
+      </div>
+      <div class="metric ${(s.score||0)>=50?'green':(s.score||0)>=25?'warn':'danger'}">
+        <div class="metric-label">score</div>
+        <div class="metric-val" style="color:${scoreColor}">${s.score||0}<span style="font-size:13px;color:var(--muted)">/100</span></div>
+        <div class="metric-sub" style="color:${conf.color}">${conf.stars} ${conf.label}</div>
+      </div>
+    </div>
+
+    <!-- Detalhes do produto -->
     <div class="card" style="margin-bottom:10px">
-      <div style="display:flex;align-items:start;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:start;justify-content:space-between;margin-bottom:12px">
         <div>
           <div style="font-size:16px;font-weight:500">${s.nome||'—'}</div>
           <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
             <span class="badge badge-gray">${s.ncm||''}</span>
             <span class="badge badge-gray">${(s.modal||'').replace('maritimo_','').toUpperCase()}</span>
-            <span class="badge badge-gray">${Number(s.qtd||0).toLocaleString('pt-BR')} un</span>
-            <span class="badge badge-gray">${s.uf_destino||''}</span>
+            <span class="badge badge-gray">${Number(s.qtd||0).toLocaleString('pt-BR')} un · ${s.uf_destino||''}</span>
             <span class="badge badge-info">${s.status||'—'}</span>
           </div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:22px;font-weight:500;font-family:var(--mono);color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(2)}%</div>
-          <div style="font-size:11px;color:var(--muted)">ROI</div>
-        </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
-        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">PREÇO SUGERIDO</div>
-          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--warn)">${fmtBRL(parseFloat(s.preco_sugerido)||0)}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">LUCRO TOTAL</div>
-          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--accent)">${fmtBRL(parseFloat(s.lucro_total)||0)}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">IMPOSTOS</div>
-          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--danger)">${fmtBRL(parseFloat(s.total_impostos)||0)}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">SCORE</div>
-          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${scoreColor}">${s.score||0}/100</div>
-          <div style="font-size:10px;color:${conf.color}">${conf.stars} ${conf.label}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary btn-sm" onclick="verAnalisesPaises('${(s.nome||'').replace(/'/g,"\\'")}')">🌍 Analisar por país</button>
-        <button class="btn btn-sm" onclick="showPage('simulador');preencherSim(${JSON.stringify({descricao:s.nome,ncm:s.ncm,fob:s.fob_unit,peso:s.peso_unit}).replace(/"/g,'&quot;')})">↗ Simular novamente</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="verAnalisesPaises('${(s.nome||'').replace(/'/g,"\\'")}',${s.id})">🌍 Analisar por país</button>
+        <button class="btn btn-sm" onclick="showPage('simulador')">↗ Simular novamente</button>
         <button class="btn btn-sm" onclick="document.getElementById('mkt-query').value='${(s.nome||'').replace(/'/g,"\\'")}';showPage('mercados');buscarTodosMercados()">🛒 Ver preços</button>
       </div>
     </div>
@@ -1207,9 +1146,9 @@ function renderDetalhe(s){
         <button onclick="switchDashTab('US',${s.id})" id="dt-US-${s.id}" style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇺🇸 EUA</button>
         <button onclick="switchDashTab('IT',${s.id})" id="dt-IT-${s.id}" style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇮🇹 Itália</button>
       </div>
-      <div id="dt-panel-BR-${s.id}"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
-      <div id="dt-panel-US-${s.id}" style="display:none"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
-      <div id="dt-panel-IT-${s.id}" style="display:none"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
+      <div id="dt-panel-BR-${s.id}"><div class="empty" style="padding:24px">Carregando Brasil...</div></div>
+      <div id="dt-panel-US-${s.id}" style="display:none"><div class="empty" style="padding:24px">Carregando EUA...</div></div>
+      <div id="dt-panel-IT-${s.id}" style="display:none"><div class="empty" style="padding:24px">Carregando Itália...</div></div>
     </div>`;
 }
 
@@ -1228,14 +1167,11 @@ function switchDashTab(pais, simId){
   });
 }
 
-async function verAnalisesPaises(nome){
-  if(!simSelecionada) return;
-  const id = simSelecionada.id;
-  const el = document.getElementById('dash-paises-'+id);
+async function verAnalisesPaises(nome, simId){
+  const el = document.getElementById('dash-paises-'+simId);
   if(!el) return;
   el.style.display='block';
-  // Dispara os 3 países em paralelo
-  Promise.all(['BR','US','IT'].map(pais => carregarPaisDash(nome, pais, id)));
+  Promise.all(['BR','US','IT'].map(pais => carregarPaisDash(nome, pais, simId)));
 }
 
 async function carregarPaisDash(nome, pais, simId){
