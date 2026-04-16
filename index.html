@@ -576,9 +576,21 @@ select option{background:var(--surface2)}
       <div class="page-sub">Pesquise preços por país — Brasil, EUA e Itália</div>
       <div class="card" style="margin-bottom:16px">
         <div class="section-label">buscar produto</div>
-        <div style="display:flex;gap:8px">
-          <input type="text" id="mkt-query" placeholder="ex: organizador de ovos de plástico" style="flex:1" onkeydown="if(event.key==='Enter') buscarTodosMercados()">
-          <button class="btn btn-primary" onclick="buscarTodosMercados()">Pesquisar todos</button>
+        <div style="position:relative">
+          <div style="display:flex;gap:8px">
+            <input type="text" id="mkt-query" placeholder="ex: organizador de ovos de plástico" style="flex:1" 
+              onkeydown="if(event.key==='Enter'){fecharAutocomplete();buscarTodosMercados()}" 
+              oninput="filtrarAutocomplete(this.value)"
+              onblur="setTimeout(fecharAutocomplete,200)">
+            <button class="btn btn-primary" onclick="buscarTodosMercados()">Pesquisar todos</button>
+          </div>
+          <!-- Autocomplete dropdown -->
+          <div id="mkt-autocomplete" style="display:none;position:absolute;top:100%;left:0;right:60px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-sm);z-index:100;box-shadow:0 4px 16px #0008;max-height:200px;overflow-y:auto"></div>
+        </div>
+        <!-- Produtos salvos como sugestões -->
+        <div id="mkt-sugestoes" style="margin-top:10px;display:none">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:6px">PRODUTOS SALVOS — clique para pesquisar:</div>
+          <div id="mkt-sugestoes-list" style="display:flex;gap:6px;flex-wrap:wrap"></div>
         </div>
         <!-- Abas por país -->
         <div style="display:flex;gap:4px;margin-top:16px;border-bottom:1px solid var(--border);padding-bottom:8px">
@@ -857,6 +869,7 @@ function showPage(id){
   if(id==='produtos') loadProdutos();
   if(id==='historico') loadHistorico();
   if(id==='admin') loadAdmin();
+  if(id==='mercados') loadMktSugestoes();
 }
 function showAlert(id, ms=3000){ const el=document.getElementById(id); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),ms); }
 
@@ -1732,6 +1745,55 @@ function buscarMercados(){
 }
 
 // ===== MERCADOS =====
+let mktProdutosSalvos = [];
+
+async function loadMktSugestoes(){
+  try {
+    const data = await sbGet('simulacoes','id,nome','created_at');
+    if(!data||!data.length) return;
+    // Salva todos os nomes únicos para autocomplete
+    mktProdutosSalvos = [...new Set(data.map(s=>s.nome).filter(Boolean))];
+    
+    // Mostra chips de sugestão
+    const nomes = mktProdutosSalvos.slice(0,8);
+    const list = document.getElementById('mkt-sugestoes-list');
+    const wrap = document.getElementById('mkt-sugestoes');
+    if(!list||!wrap) return;
+    list.innerHTML = nomes.map(n=>`
+      <button onclick="selecionarProduto('${n.replace(/'/g,"\\'")}');"
+        style="font-family:var(--mono);font-size:10px;padding:4px 10px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted2);border-radius:4px;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+        onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted2)'">${n}</button>
+    `).join('');
+    wrap.style.display='block';
+  } catch(e){ /* silencioso */ }
+}
+
+function selecionarProduto(nome){
+  document.getElementById('mkt-query').value = nome;
+  fecharAutocomplete();
+  buscarTodosMercados();
+}
+
+function filtrarAutocomplete(val){
+  const ac = document.getElementById('mkt-autocomplete');
+  if(!val || val.length < 2){ ac.style.display='none'; return; }
+  const filtrado = mktProdutosSalvos.filter(n => n.toLowerCase().includes(val.toLowerCase()));
+  if(!filtrado.length){ ac.style.display='none'; return; }
+  ac.innerHTML = filtrado.map(n=>`
+    <div onclick="selecionarProduto('${n.replace(/'/g,"\\'")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border);transition:background .1s"
+      onmouseover="this.style.background='var(--surface2)'"
+      onmouseout="this.style.background='transparent'">
+      <span style="color:var(--accent);font-family:var(--mono);font-size:10px;margin-right:6px">↗</span>${n}
+    </div>`).join('');
+  ac.style.display='block';
+}
+
+function fecharAutocomplete(){
+  const ac = document.getElementById('mkt-autocomplete');
+  if(ac) ac.style.display='none';
+}
 let mktTabAtual = 'BR';
 
 function switchMktTab(pais){
