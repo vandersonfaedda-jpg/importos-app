@@ -222,29 +222,29 @@ select option{background:var(--surface2)}
     <div class="page active" id="page-dashboard">
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Visão geral das simulações</div>
+
+      <!-- Métricas globais -->
       <div class="metrics" id="dash-metrics"><div class="loading"><span class="spinner"></span>carregando...</div></div>
 
-      <!-- Ranking -->
-      <div class="card" style="margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="section-label" style="margin-bottom:0">🏆 ranking — melhores oportunidades</div>
-          <div style="display:flex;gap:6px" id="ranking-filtros">
-            <button onclick="filtrarRanking('todos')" id="rf-todos" class="btn btn-sm" style="border-color:var(--accent);color:var(--accent)">Todos</button>
-            <button onclick="filtrarRanking('utensilios')" id="rf-utensilios" class="btn btn-sm">Utensílios</button>
-            <button onclick="filtrarRanking('eletronicos')" id="rf-eletronicos" class="btn btn-sm">Eletrônicos</button>
-            <button onclick="filtrarRanking('outros')" id="rf-outros" class="btn btn-sm">Outros</button>
+      <!-- Layout: lista + detalhe -->
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;margin-top:4px">
+
+        <!-- Lista de simulações -->
+        <div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:10px">🏆 simulações salvas</div>
+            <div id="dash-lista" style="display:flex;flex-direction:column;gap:4px">
+              <div class="loading"><span class="spinner"></span>carregando...</div>
+            </div>
           </div>
         </div>
-        <div id="ranking-list"></div>
-      </div>
 
-      <div class="card">
-        <div class="section-label">simulações recentes</div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>NCM</th><th>Modal</th><th>Qtd</th><th>ROI</th><th>Score</th><th>Lucro</th><th>Status</th></tr></thead>
-            <tbody id="dash-table"><tr><td colspan="8"><div class="loading"><span class="spinner"></span>carregando...</div></td></tr></tbody>
-          </table>
+        <!-- Painel de detalhe -->
+        <div id="dash-detalhe">
+          <div class="card" style="text-align:center;padding:40px;color:var(--muted)">
+            <div style="font-size:32px;margin-bottom:8px">←</div>
+            <div style="font-family:var(--mono);font-size:12px">Selecione uma simulação para ver a análise detalhada por país</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1028,25 +1028,27 @@ async function buscarPrecosMercado(nome, targetId){
 
 async function loadDashboard(){
   document.getElementById('dash-metrics').innerHTML='<div class="loading" style="grid-column:1/-1"><span class="spinner"></span>conectando...</div>';
+  document.getElementById('dash-lista').innerHTML='<div class="loading"><span class="spinner"></span>carregando...</div>';
   let data;
   try {
-    data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at');
+    data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at,dados');
   } catch(e) {
     document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1;color:var(--danger)">Erro: ${e.message}</div>`;
-    document.getElementById('ranking-list').innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px">Erro ao carregar: ${e.message}</div>`;
+    document.getElementById('dash-lista').innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px">Erro: ${e.message}</div>`;
     return;
   }
-  if(!data || data.length===0){
+  if(!data||data.length===0){
     document.getElementById('dash-metrics').innerHTML='<div class="empty" style="grid-column:1/-1">Nenhuma simulação encontrada</div>';
-    document.getElementById('ranking-list').innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação salva ainda</div>';
+    document.getElementById('dash-lista').innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação salva ainda</div>';
     return;
   }
   todasSimulacoes = data;
-  renderRanking(data);
+
+  // Métricas globais
   const lucro = data.reduce((a,s)=>a+(parseFloat(s.lucro_total)||0),0);
   const impostos = data.reduce((a,s)=>a+(parseFloat(s.total_impostos)||0),0);
-  const melhorRoi = data.length ? Math.max(...data.map(s=>(parseFloat(s.roi)||0)*100)) : 0;
-  const avgScore = data.length ? Math.round(data.reduce((a,s)=>a+(s.score||0),0)/data.length) : 0;
+  const melhorRoi = Math.max(...data.map(s=>(parseFloat(s.roi)||0)*100));
+  const avgScore = Math.round(data.reduce((a,s)=>a+(s.score||0),0)/data.length);
   document.getElementById('dash-metrics').innerHTML = `
     <div class="metric ${lucro>=0?'green':'danger'}">
       <div class="metric-label">lucro acumulado</div>
@@ -1068,19 +1070,168 @@ async function loadDashboard(){
       <div class="metric-val" style="color:${avgScore>=50?'var(--accent)':avgScore>=25?'var(--warn)':'var(--danger)'}">${avgScore}<span style="font-size:13px;color:var(--muted)">/100</span></div>
       <div class="metric-sub">viabilidade geral</div>
     </div>`;
-  document.getElementById('dash-table').innerHTML = data.length ? data.map(s=>{
+
+  // Lista selecionável
+  const medalhas = ['🥇','🥈','🥉','4º','5º','6º','7º','8º','9º','10º'];
+  const sorted = [...data].sort((a,b)=>(b.score||0)-(a.score||0));
+  document.getElementById('dash-lista').innerHTML = sorted.map((s,i)=>{
     const roi = parseFloat(s.roi||0)*100;
-    return `<tr>
-      <td class="td-name">${s.nome||'—'}</td>
-      <td><span class="badge badge-gray">${s.ncm||'—'}</span></td>
-      <td>${(s.modal||'—').replace('maritimo_','Marítimo ').replace('aereo','Aéreo').toUpperCase()}</td>
-      <td>${Number(s.qtd||0).toLocaleString('pt-BR')}</td>
-      <td><span class="badge ${roi>=0?'badge-pos':'badge-neg'}">${fmtPct(roi)}</span></td>
-      <td><span class="badge ${(s.score||0)>=50?'badge-pos':(s.score||0)>=25?'badge-warn':'badge-neg'}">${s.score||0}/100</span></td>
-      <td style="color:${parseFloat(s.lucro_total)>=0?'var(--accent)':'var(--danger)'}">${fmtBRL(parseFloat(s.lucro_total)||0)}</td>
-      <td><span class="badge badge-info">${s.status||'—'}</span></td>
-    </tr>`;}).join('') : '<tr><td colspan="8"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
+    const conf = calcularConfianca(s);
+    return `<div id="dash-item-${s.id}" onclick="selecionarSimulacao(${s.id})"
+      style="padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);transition:all .15s;margin-bottom:4px"
+      onmouseover="if(!this.classList.contains('sel'))this.style.borderColor='var(--accent)'"
+      onmouseout="if(!this.classList.contains('sel'))this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">${medalhas[i]||'·'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.nome||'—'}</div>
+          <div style="display:flex;gap:4px;margin-top:3px">
+            <span class="badge badge-gray" style="font-size:9px">${s.ncm||''}</span>
+            <span style="font-size:10px;color:${roi>=0?'var(--accent)':'var(--danger)'}">ROI ${roi>=0?'+':''}${roi.toFixed(1)}%</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;color:${conf.color}">${conf.stars}</div>
+          <div style="font-size:9px;font-family:var(--mono);color:${conf.color}">${conf.label}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Seleciona o primeiro automaticamente
+  if(sorted.length) selecionarSimulacao(sorted[0].id);
 }
+
+let simSelecionada = null;
+
+function selecionarSimulacao(id){
+  simSelecionada = todasSimulacoes.find(s=>s.id===id);
+  if(!simSelecionada) return;
+
+  // Destaca item selecionado
+  document.querySelectorAll('[id^="dash-item-"]').forEach(el=>{
+    el.classList.remove('sel');
+    el.style.borderColor='var(--border)';
+    el.style.background='transparent';
+  });
+  const item = document.getElementById('dash-item-'+id);
+  if(item){
+    item.classList.add('sel');
+    item.style.borderColor='var(--accent)';
+    item.style.background='var(--surface2)';
+  }
+
+  renderDetalhe(simSelecionada);
+}
+
+function renderDetalhe(s){
+  const roi = parseFloat(s.roi||0)*100;
+  const conf = calcularConfianca(s);
+  const scoreColor = (s.score||0)>=60?'var(--accent)':(s.score||0)>=35?'var(--warn)':'var(--danger)';
+
+  document.getElementById('dash-detalhe').innerHTML = `
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:start;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div style="font-size:16px;font-weight:500">${s.nome||'—'}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <span class="badge badge-gray">${s.ncm||''}</span>
+            <span class="badge badge-gray">${(s.modal||'').replace('maritimo_','').toUpperCase()}</span>
+            <span class="badge badge-gray">${Number(s.qtd||0).toLocaleString('pt-BR')} un</span>
+            <span class="badge badge-gray">${s.uf_destino||''}</span>
+            <span class="badge badge-info">${s.status||'—'}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:22px;font-weight:500;font-family:var(--mono);color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(2)}%</div>
+          <div style="font-size:11px;color:var(--muted)">ROI</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">PREÇO SUGERIDO</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--warn)">${fmtBRL(parseFloat(s.preco_sugerido)||0)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">LUCRO TOTAL</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--accent)">${fmtBRL(parseFloat(s.lucro_total)||0)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">IMPOSTOS</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:var(--danger)">${fmtBRL(parseFloat(s.total_impostos)||0)}</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">SCORE</div>
+          <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${scoreColor}">${s.score||0}/100</div>
+          <div style="font-size:10px;color:${conf.color}">${conf.stars} ${conf.label}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="verAnalisesPaises('${(s.nome||'').replace(/'/g,"\\'")}')">🌍 Analisar por país</button>
+        <button class="btn btn-sm" onclick="showPage('simulador');preencherSim(${JSON.stringify({descricao:s.nome,ncm:s.ncm,fob:s.fob_unit,peso:s.peso_unit}).replace(/"/g,'&quot;')})">↗ Simular novamente</button>
+        <button class="btn btn-sm" onclick="document.getElementById('mkt-query').value='${(s.nome||'').replace(/'/g,"\\'")}';showPage('mercados');buscarTodosMercados()">🛒 Ver preços</button>
+      </div>
+    </div>
+
+    <!-- Análise por país -->
+    <div id="dash-paises-${s.id}" style="display:none">
+      <div style="display:flex;gap:4px;margin-bottom:12px">
+        <button onclick="switchDashTab('BR',${s.id})" id="dt-BR-${s.id}" style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--surface2);color:var(--accent);cursor:pointer">🇧🇷 Brasil</button>
+        <button onclick="switchDashTab('US',${s.id})" id="dt-US-${s.id}" style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇺🇸 EUA</button>
+        <button onclick="switchDashTab('IT',${s.id})" id="dt-IT-${s.id}" style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇮🇹 Itália</button>
+      </div>
+      <div id="dt-panel-BR-${s.id}"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
+      <div id="dt-panel-US-${s.id}" style="display:none"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
+      <div id="dt-panel-IT-${s.id}" style="display:none"><div class="empty" style="padding:30px">Clique em "Analisar por país" para carregar</div></div>
+    </div>`;
+}
+
+function switchDashTab(pais, simId){
+  ['BR','US','IT'].forEach(p=>{
+    const tab = document.getElementById('dt-'+p+'-'+simId);
+    const panel = document.getElementById('dt-panel-'+p+'-'+simId);
+    if(!tab||!panel) return;
+    if(p===pais){
+      tab.style.borderColor='var(--accent)'; tab.style.color='var(--accent)'; tab.style.background='var(--surface2)';
+      panel.style.display='block';
+    } else {
+      tab.style.borderColor='var(--border2)'; tab.style.color='var(--muted)'; tab.style.background='transparent';
+      panel.style.display='none';
+    }
+  });
+}
+
+async function verAnalisesPaises(nome){
+  if(!simSelecionada) return;
+  const id = simSelecionada.id;
+  const el = document.getElementById('dash-paises-'+id);
+  if(!el) return;
+  el.style.display='block';
+  // Dispara os 3 países em paralelo
+  Promise.all(['BR','US','IT'].map(pais => carregarPaisDash(nome, pais, id)));
+}
+
+async function carregarPaisDash(nome, pais, simId){
+  const panel = document.getElementById('dt-panel-'+pais+'-'+simId);
+  if(!panel) return;
+  const nomes = {BR:'Brasil',US:'EUA',IT:'Itália'};
+  const moedas = {BR:'R$',US:'$',IT:'€'};
+  panel.innerHTML = '<div class="loading" style="padding:20px"><span class="spinner"></span>analisando '+nomes[pais]+'...</div>';
+  try {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`,{
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({action:'mercados_pais', query:nome, pais})
+    });
+    if(!resp.ok) throw new Error('Edge Function: '+resp.status);
+    const d = await resp.json();
+    if(d.error) throw new Error(d.error);
+    panel.innerHTML = renderMercadosPais(d, moedas[pais]||'R$');
+  } catch(e){
+    panel.innerHTML = '<div style="color:var(--danger);font-size:12px;padding:8px">Erro '+nomes[pais]+': '+e.message+'</div>';
+  }
+}
+
+
 
 // ---- Produtos ----
 async function loadProdutos(){
