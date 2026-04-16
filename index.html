@@ -861,10 +861,28 @@ function limparImg(){
   document.getElementById('img-dados-content').style.display='none';
 }
 
+async function comprimirImagem(base64, mime){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      const max = 800;
+      let w=img.width, h=img.height;
+      if(w>max||h>max){ if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;} }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const data = canvas.toDataURL('image/jpeg',0.7).split(',')[1];
+      resolve({data, mime:'image/jpeg'});
+    };
+    img.src = `data:${mime};base64,${base64}`;
+  });
+}
+
 async function identificarProduto(){
   if(!imgBase64){ alert('Selecione uma imagem primeiro.'); return; }
   const rc = document.getElementById('img-result-content');
-  rc.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>analisando imagem...';
+  rc.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>comprimindo e analisando imagem...';
+  const {data: imgComprimida, mime: mimeComprimido} = await comprimirImagem(imgBase64, imgMime);
   document.getElementById('img-dados-empty').style.display='block';
   document.getElementById('img-dados-content').style.display='none';
 
@@ -874,8 +892,8 @@ async function identificarProduto(){
       headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
       body: JSON.stringify({
         action:'identificar',
-        image_base64: imgBase64,
-        image_mime: imgMime
+        image_base64: imgComprimida,
+        image_mime: mimeComprimido
       })
     });
     if(!resp.ok) throw new Error('Erro na Edge Function: '+resp.status);
