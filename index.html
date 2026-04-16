@@ -203,9 +203,17 @@ select option{background:var(--surface2)}
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Admin
       </div>
+      <div class="nav-item" id="nav-config" style="display:none" onclick="showPage('config')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Config
+      </div>
     </nav>
     <div style="padding:8px;border-top:1px solid var(--border)">
       <div id="sidebar-user" style="font-size:11px;font-family:var(--mono);color:var(--muted);padding:8px 10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="cambio-status" style="font-size:11px;font-family:var(--mono);padding:8px 10px;margin-bottom:4px;line-height:1.6;border-top:1px solid var(--border)">
+        <div style="color:var(--muted);font-size:10px;margin-bottom:3px">CÂMBIO</div>
+        <span style="color:var(--muted)">carregando...</span>
+      </div>
       <div class="nav-item" onclick="fazerLogout()" style="color:var(--danger)">
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Sair
@@ -664,6 +672,99 @@ select option{background:var(--surface2)}
       </div>
     </div>
 
+    <!-- Configurações -->
+    <div class="page" id="page-config">
+      <div class="page-title">Configurações</div>
+      <div class="page-sub">Ajuste os parâmetros do simulador</div>
+
+      <!-- Tabela de fretes -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div class="section-label" style="margin-bottom:2px">🚢 tabela de fretes (USD por embarque)</div>
+            <div style="font-size:11px;color:var(--muted)">Valores típicos China → destino. Atualize com cotações reais mensalmente.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="salvarFretes()">💾 Salvar</button>
+        </div>
+
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border2)">
+                <th style="text-align:left;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)">DESTINO</th>
+                <th style="text-align:center;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)">✈ AÉREO</th>
+                <th style="text-align:center;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)">⚓ LCL</th>
+                <th style="text-align:center;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)">🚢 FCL 20'</th>
+                <th style="text-align:center;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted)">🚢 FCL 40'</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 12px;font-weight:500">🇧🇷 Brasil</td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-BR-aereo" class="input" style="width:90px;text-align:center" value="1200"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-BR-maritimo_lcl" class="input" style="width:90px;text-align:center" value="950"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-BR-maritimo_fcl20" class="input" style="width:90px;text-align:center" value="1800"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-BR-maritimo_fcl40" class="input" style="width:90px;text-align:center" value="2800"></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:10px 12px;font-weight:500">🇺🇸 EUA</td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-US-aereo" class="input" style="width:90px;text-align:center" value="800"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-US-maritimo_lcl" class="input" style="width:90px;text-align:center" value="650"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-US-maritimo_fcl20" class="input" style="width:90px;text-align:center" value="1200"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-US-maritimo_fcl40" class="input" style="width:90px;text-align:center" value="2000"></td>
+              </tr>
+              <tr>
+                <td style="padding:10px 12px;font-weight:500">🇮🇹 Itália</td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-IT-aereo" class="input" style="width:90px;text-align:center" value="900"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-IT-maritimo_lcl" class="input" style="width:90px;text-align:center" value="750"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-IT-maritimo_fcl20" class="input" style="width:90px;text-align:center" value="1400"></td>
+                <td style="padding:6px 12px;text-align:center"><input type="number" id="f-IT-maritimo_fcl40" class="input" style="width:90px;text-align:center" value="2200"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="config-status" style="font-size:11px;font-family:var(--mono);color:var(--accent);margin-top:10px;display:none"></div>
+      </div>
+
+      <!-- Links úteis para cotação real -->
+      <div class="card">
+        <div class="section-label" style="margin-bottom:10px">🔗 cotação de frete gratuita</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Sites para consultar fretes reais China → destino sem custo:</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+          <a href="https://www.freightos.com/freight-resources/freight-rate/" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">Freightos 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Cotação online gratuita China → mundo</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">freightos.com →</div>
+          </a>
+          <a href="https://www.icontainers.com/sea-freight/" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">iContainers 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">LCL e FCL por rota, sem cadastro</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">icontainers.com →</div>
+          </a>
+          <a href="https://www.flexport.com/products/ocean-freight/" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">Flexport 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Estimativas e comparação de rotas</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">flexport.com →</div>
+          </a>
+          <a href="https://www.searates.com/container/profitcalc/" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">SeaRates 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Calculadora de frete + lucro</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">searates.com →</div>
+          </a>
+          <a href="https://www.alibaba.com/logistics" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">Alibaba Logistics 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Se comprar do fornecedor, frete incluso</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">alibaba.com →</div>
+          </a>
+          <a href="https://www.portosul.com.br/simulador" target="_blank" style="display:block;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);text-decoration:none;border:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:500;color:var(--fg)">Porto Sul 🇧🇷 🆓</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Custos portuários BR</div>
+            <div style="font-size:10px;color:var(--accent);margin-top:4px">portosul.com.br →</div>
+          </a>
+        </div>
+      </div>
+    </div>
+
     <!-- Admin -->
     <div class="page" id="page-admin">
       <div class="page-title">Administração</div>
@@ -717,6 +818,38 @@ const SUPA_URL = 'https://cxogqprgmdkbpmlcdorg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4b2dxcHJnbWRrYnBtbGNkb3JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODg5MzksImV4cCI6MjA5MDY2NDkzOX0.URn4t-gh3mL8HpDUz78e_ec-B-neXukCZDTAr9OpSIs';
 const AUTH_URL = `${SUPA_URL}/functions/v1/importos-auth`;
 
+// Câmbio em tempo real
+let cambioAtual = { USDBRL: 5.80, USDEUR: 0.92, atualizadoEm: null };
+
+async function buscarCambio(){
+  try {
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const d = await r.json();
+    if(d.rates){
+      cambioAtual.USDBRL = d.rates.BRL || 5.80;
+      cambioAtual.USDEUR = d.rates.EUR || 0.92;
+      cambioAtual.atualizadoEm = new Date().toLocaleTimeString('pt-BR');
+      // Atualiza campo câmbio no simulador
+      const campoC = document.getElementById('s-cambio');
+      if(campoC && parseFloat(campoC.value) === 5.80) campoC.value = cambioAtual.USDBRL.toFixed(2);
+      renderCambioStatus();
+    }
+  } catch(e){ console.log('Câmbio offline, usando padrão'); }
+}
+
+function renderCambioStatus(){
+  const el = document.getElementById('cambio-status');
+  if(!el) return;
+  el.innerHTML = `
+    <span style="color:var(--accent)">USD/BRL ${cambioAtual.USDBRL.toFixed(2)}</span>
+    <span style="color:var(--muted);margin:0 6px">·</span>
+    <span style="color:var(--accent2)">USD/EUR ${cambioAtual.USDEUR.toFixed(2)}</span>
+    <span style="color:var(--muted);margin:0 6px">·</span>
+    <span style="color:var(--muted);font-size:10px">atualizado ${cambioAtual.atualizadoEm||'—'}</span>
+    <button onclick="buscarCambio()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;margin-left:6px">↺</button>
+  `;
+}
+
 let usuarioLogado = null;
 
 // ===== LOGIN / LOGOUT =====
@@ -738,13 +871,15 @@ async function fazerLogin(){
     document.getElementById('tela-login').style.display='none';
     document.getElementById('app-main').style.display='flex';
     document.getElementById('sidebar-user').textContent = d.nome + (d.perfil==='master'?' · MASTER':'');
-    if(d.perfil==='master'||d.perfil==='admin') document.getElementById('nav-admin').style.display='flex';
+    if(d.perfil==='master'||d.perfil==='admin') { document.getElementById('nav-admin').style.display='flex'; document.getElementById('nav-config').style.display='flex'; }
     // Garante que o dashboard esteja visível
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     document.getElementById('page-dashboard').classList.add('active');
     document.querySelector('[onclick="showPage(\'dashboard\')"]')?.classList.add('active');
     loadDashboard();
+    loadConfig();
+    buscarCambio();
   } catch(e){ mostrarErroLogin('Erro de conexão'); btn.textContent='Entrar'; }
 }
 
@@ -866,6 +1001,7 @@ function showPage(id){
   if(id==='produtos') loadProdutos();
   if(id==='historico') loadHistorico();
   if(id==='admin') loadAdmin();
+  if(id==='config') loadConfig();
   if(id==='mercados') loadMktSugestoes();
 }
 function showAlert(id, ms=3000){ const el=document.getElementById(id); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),ms); }
@@ -1195,6 +1331,64 @@ async function carregarPaisDash(nome, pais, simId){
 }
 
 
+
+// ---- Configurações de Frete ----
+async function loadConfig(){
+  try {
+    const data = await sbGet('configuracoes', 'chave,valor', '&chave=eq.fretes');
+    if(data && data.length && data[0].valor) {
+      const fretes = data[0].valor;
+      ['BR','US','IT'].forEach(d => {
+        ['aereo','maritimo_lcl','maritimo_fcl20','maritimo_fcl40'].forEach(m => {
+          const el = document.getElementById(`f-${d}-${m}`);
+          if(el && fretes[d] && fretes[d][m]) el.value = fretes[d][m];
+        });
+      });
+      // Atualiza a tabela em memória também
+      ['BR','US','IT'].forEach(d => {
+        if(fretes[d]) FRETE_POR_DESTINO[d] = {...FRETE_POR_DESTINO[d], ...fretes[d]};
+      });
+    }
+  } catch(e){ console.log('Config não carregada:', e.message); }
+}
+
+async function salvarFretes(){
+  const fretes = {};
+  ['BR','US','IT'].forEach(d => {
+    fretes[d] = {};
+    ['aereo','maritimo_lcl','maritimo_fcl20','maritimo_fcl40'].forEach(m => {
+      const el = document.getElementById(`f-${d}-${m}`);
+      if(el) fretes[d][m] = parseFloat(el.value)||0;
+    });
+  });
+
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/configuracoes?chave=eq.fretes`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ valor: fretes, updated_at: new Date().toISOString() })
+    });
+    if(!r.ok) throw new Error('Erro ao salvar');
+
+    // Atualiza tabela em memória
+    ['BR','US','IT'].forEach(d => { FRETE_POR_DESTINO[d] = {...fretes[d]}; });
+
+    const st = document.getElementById('config-status');
+    st.textContent = '✅ Fretes salvos com sucesso!';
+    st.style.display = 'block';
+    setTimeout(()=>{ st.style.display='none'; }, 3000);
+  } catch(e) {
+    const st = document.getElementById('config-status');
+    st.textContent = '❌ Erro ao salvar: ' + e.message;
+    st.style.color = 'var(--danger)';
+    st.style.display = 'block';
+  }
+}
 
 // ---- Produtos ----
 async function loadProdutos(){
