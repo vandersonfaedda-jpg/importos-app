@@ -1974,67 +1974,158 @@ async function buscarTodosMercados(){
 // Mantém compatibilidade com buscarMercados() chamado de outras páginas
 async function buscarMercadosQuery(){ buscarTodosMercados(); }
 
-function renderMercadosPais(data, simbolo){
-  const fmtP = v => v ? simbolo+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-  const fmtUSD = v => v ? 'US$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+function renderMercadosPais(data, simboloFallback){
+  // Usa símbolo da resposta ou fallback
+  const simbolo = data.simbolo || simboloFallback || 'R$';
+  const fmtP = v => (v!==null&&v!==undefined&&v!==''&&v!==0) ? simbolo+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtPZ = v => (v!==null&&v!==undefined&&v!=='') ? simbolo+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtUSD = v => (v!==null&&v!==undefined&&v!==''&&v!==0) ? 'US$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
   const confColor = c => c==='alta'?'var(--accent)':c==='media'?'var(--warn)':'var(--danger)';
 
-  if(data.custo_total_importacao || data.custo_fob_usd) {
+  if(data.custo_total_importacao !== undefined || data.custo_fob_usd !== undefined) {
+    const viab = data.viabilidade||'media';
+    const vc = confColor(viab);
     return `
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
-      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">FOB CHINA</div>
-        <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:var(--muted2)">${fmtUSD(data.custo_fob_usd)}</div>
-        <div style="font-size:9px;color:var(--muted)">por unidade</div>
+    <!-- RESUMO PRINCIPAL -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">
+      <!-- Coluna esquerda: estrutura de custos -->
+      <div class="card">
+        <div class="section-label" style="margin-bottom:10px">💰 estrutura de custos (por unidade)</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:var(--radius-sm)">
+            <span style="font-size:12px;color:var(--muted)">Custo FOB China</span>
+            <span style="font-size:12px;font-family:var(--mono)">${fmtUSD(data.custo_fob_usd)}${data.custo_fob_brl?` <span style="color:var(--muted);font-size:11px">(${fmtPZ(data.custo_fob_brl)})</span>`:''}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:var(--radius-sm)">
+            <span style="font-size:12px;color:var(--muted)">+ Frete internacional</span>
+            <span style="font-size:12px;font-family:var(--mono)">${fmtUSD(data.frete_unitario_usd)}</span>
+          </div>
+          ${data.seguro_unitario_usd?`
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:var(--radius-sm)">
+            <span style="font-size:12px;color:var(--muted)">+ Seguro</span>
+            <span style="font-size:12px;font-family:var(--mono)">${fmtUSD(data.seguro_unitario_usd)}</span>
+          </div>`:''}
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--surface2);border-radius:var(--radius-sm)">
+            <span style="font-size:12px;font-weight:500">= Valor CIF</span>
+            <span style="font-size:12px;font-family:var(--mono);font-weight:500">${data.custo_cif_usd?fmtUSD(data.custo_cif_usd):''} ${data.custo_cif_local?`<span style="color:var(--warn)">${fmtPZ(data.custo_cif_local)}</span>`:''}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:var(--radius-sm)">
+            <span style="font-size:12px;color:var(--danger)">+ Impostos (${data.impostos_percentual||'—'})</span>
+            <span style="font-size:12px;font-family:var(--mono);color:var(--danger)">${fmtPZ(data.total_impostos_local)}</span>
+          </div>
+          ${data.outros_custos_local?`
+          <div style="display:flex;justify-content:space-between;padding:5px 8px;border-radius:var(--radius-sm)">
+            <span style="font-size:12px;color:var(--muted)">+ Outros custos</span>
+            <span style="font-size:12px;font-family:var(--mono)">${fmtPZ(data.outros_custos_local)}</span>
+          </div>`:''}
+          <div style="display:flex;justify-content:space-between;padding:7px 8px;background:var(--danger);border-radius:var(--radius-sm);margin-top:2px">
+            <span style="font-size:13px;font-weight:600;color:#fff">= CUSTO TOTAL</span>
+            <span style="font-size:13px;font-family:var(--mono);font-weight:600;color:#fff">${fmtPZ(data.custo_total_importacao)}</span>
+          </div>
+        </div>
       </div>
-      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">CUSTO IMPORT.</div>
-        <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:var(--danger)">${fmtP(data.custo_total_importacao)}</div>
-        <div style="font-size:9px;color:var(--muted)">impostos ${data.impostos_percentual||''}</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">PRECO VENDA</div>
-        <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:var(--warn)">${fmtP(data.preco_sugerido_venda)}</div>
-        <div style="font-size:9px;color:var(--muted)">sugerido</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">MARGEM / ROI</div>
-        <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:${confColor(data.viabilidade)}">${data.margem_estimada||data.roi_estimado||'—'}</div>
-        <div style="font-size:9px;color:${confColor(data.viabilidade)}">${data.viabilidade||'—'}</div>
+
+      <!-- Coluna direita: resultado -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="card" style="border-left:3px solid var(--warn)">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">PREÇO DE VENDA SUGERIDO</div>
+          <div style="font-size:22px;font-weight:500;font-family:var(--mono);color:var(--warn);margin:4px 0">${fmtPZ(data.preco_sugerido_venda)}</div>
+          <div style="font-size:10px;color:var(--muted)">nos marketplaces locais</div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--accent)">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">LUCRO UNITÁRIO ESTIMADO</div>
+          <div style="font-size:18px;font-weight:500;font-family:var(--mono);color:var(--accent);margin:4px 0">${fmtPZ(data.lucro_unitario)}</div>
+          <div style="font-size:10px;color:var(--muted)">margem ${data.margem_estimada||'—'} · ROI ${data.roi_estimado||'—'}</div>
+        </div>
+        <div class="card" style="border-left:3px solid ${vc};text-align:center">
+          <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">VIABILIDADE</div>
+          <div style="font-size:20px;font-weight:600;color:${vc};margin:4px 0">${viab.toUpperCase()}</div>
+          <div style="font-size:10px;color:${vc}">${viab==='alta'?'✅ Recomendado importar':viab==='media'?'⚠️ Avalie com cuidado':'❌ Alto risco'}</div>
+        </div>
       </div>
     </div>
+
+    <!-- IMPOSTOS DETALHADOS -->
     ${(data.detalhes_impostos||[]).length ? `
     <div class="card" style="margin-bottom:10px">
-      <div class="section-label" style="margin-bottom:8px">impostos de importacao</div>
+      <div class="section-label" style="margin-bottom:8px">📋 impostos de importação detalhados</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border2)">
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-family:var(--mono);font-size:10px">IMPOSTO</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-family:var(--mono);font-size:10px">BASE DE CÁLCULO</th>
+              <th style="text-align:right;padding:6px 8px;color:var(--muted);font-family:var(--mono);font-size:10px">ALÍQUOTA</th>
+              <th style="text-align:right;padding:6px 8px;color:var(--muted);font-family:var(--mono);font-size:10px">VALOR</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(data.detalhes_impostos||[]).map((i,idx)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${idx%2===0?'transparent':'var(--surface2)'}">
+              <td style="padding:6px 8px">
+                <div style="font-weight:500;font-size:12px">${i.nome_oficial||i.nome||'—'}</div>
+                ${(i.nome_pt&&i.nome_pt!==i.nome_oficial)?`<div style="font-size:10px;color:var(--muted);margin-top:2px">→ ${i.nome_pt}</div>`:''}
+              </td>
+              <td style="padding:6px 8px;font-size:11px">
+                <div style="color:var(--muted2)">${i.base_calculo_oficial||i.base_calculo||'—'}</div>
+                ${i.base_calculo_pt?`<div style="color:var(--muted);font-size:10px;margin-top:1px">→ ${i.base_calculo_pt}</div>`:''}
+              </td>
+              <td style="padding:6px 8px;text-align:right;font-family:var(--mono);color:var(--warn);font-size:12px">${i.aliquota||'—'}</td>
+              <td style="padding:6px 8px;text-align:right;font-family:var(--mono);font-size:12px">${i.valor?fmtPZ(i.valor):'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+
+    <!-- MARKETPLACES -->
+    ${(data.marketplaces||[]).length ? `
+    <div class="card" style="margin-bottom:10px">
+      <div class="section-label" style="margin-bottom:8px">🛒 preços de venda nos marketplaces</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+        ${(data.marketplaces||[]).map(m=>`
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px;border-top:2px solid var(--accent)">
+          <div style="font-size:11px;font-weight:500;margin-bottom:6px">${m.nome}</div>
+          <div style="font-size:16px;font-weight:500;font-family:var(--mono);color:var(--accent)">${fmtPZ(m.preco_medio||m.preco_min)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${fmtPZ(m.preco_min)} – ${fmtPZ(m.preco_max)}</div>
+          ${m.comissao?`<div style="font-size:10px;color:var(--warn);margin-top:4px">comissão ${m.comissao}</div>`:''}
+          ${m.lucro_pos_comissao?`<div style="font-size:10px;color:var(--accent);margin-top:2px">lucro ${fmtPZ(m.lucro_pos_comissao)}</div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- PONTOS DE ATENÇÃO -->
+    ${(data.pontos_atencao||[]).length ? `
+    <div class="card" style="margin-bottom:10px">
+      <div class="section-label" style="margin-bottom:8px">⚠️ pontos de atenção</div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        ${(data.detalhes_impostos||[]).map(i=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--surface2);border-radius:var(--radius-sm)">
-          <span style="font-size:12px">${i.nome||'—'}</span>
-          <div style="text-align:right">
-            <span style="font-size:11px;font-family:var(--mono);color:var(--warn)">${i.aliquota||'—'}</span>
-            ${i.valor?`<span style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:8px">${fmtP(i.valor)}</span>`:''}
+        ${(data.pontos_atencao||[]).map(p=>`
+        <div style="display:flex;gap:8px;align-items:start;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--warn);flex-shrink:0;font-size:14px">⚠</span>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--fg)">${typeof p==='object'?(p.titulo_pt||''):p}</div>
+            ${typeof p==='object'&&p.detalhe_pt?`<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5">${p.detalhe_pt}</div>`:''}
           </div>
         </div>`).join('')}
       </div>
     </div>` : ''}
-    ${(data.marketplaces||[]).length ? `
-    <div class="card" style="margin-bottom:10px">
-      <div class="section-label" style="margin-bottom:8px">precos nos marketplaces</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
-        ${(data.marketplaces||[]).map(m=>`
-        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:8px">
-          <div style="font-size:11px;font-weight:500;margin-bottom:4px">${m.nome}</div>
-          <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:var(--accent)">${fmtP(m.preco_medio||m.preco_min)}</div>
-          <div style="font-size:10px;color:var(--muted)">min ${fmtP(m.preco_min)} · max ${fmtP(m.preco_max)}</div>
-          ${m.comissao?`<div style="font-size:10px;color:var(--warn);margin-top:3px">comissao ${m.comissao}</div>`:''}
-        </div>`).join('')}
-      </div>
-    </div>` : ''}
-    ${data.analise?`<div class="card" style="margin-bottom:8px"><div class="section-label">analise</div><div style="font-size:12px;color:var(--muted2);line-height:1.6;margin-top:6px">${data.analise}</div></div>`:''}
-    ${data.recomendacao?`<div class="card"><div class="section-label">recomendacao</div><div style="font-size:12px;color:var(--accent);line-height:1.6;margin-top:6px">💡 ${data.recomendacao}</div></div>`:''}`;
+
+    <!-- ANÁLISE -->
+    ${data.analise?`
+    <div class="card" style="margin-bottom:8px">
+      <div class="section-label">📊 análise de viabilidade</div>
+      <div style="font-size:12px;color:var(--muted2);line-height:1.8;margin-top:6px">${data.analise}</div>
+    </div>`:''}
+
+    <!-- RECOMENDAÇÃO -->
+    ${data.recomendacao?`
+    <div class="card" style="border-left:3px solid ${vc}">
+      <div class="section-label">💡 recomendação</div>
+      <div style="font-size:13px;color:var(--fg);line-height:1.7;margin-top:6px;font-weight:500">${data.recomendacao}</div>
+    </div>`:''}`;
   }
 
-  // Formato legado
+    // Formato legado
   return `
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
     ${(data.marketplaces||[]).map(m=>`
