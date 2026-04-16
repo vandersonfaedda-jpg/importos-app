@@ -163,8 +163,7 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
-<div id="app-wrapper">
-<div class="app">
+<div class="app" id="app-main" style="display:none">
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-logo">
@@ -703,7 +702,7 @@ select option{background:var(--surface2)}
 
   </div>
 </div>
-</div><!-- fecha app-wrapper -->
+
 
 <script>
 const SUPA_URL = 'https://cxogqprgmdkbpmlcdorg.supabase.co';
@@ -729,7 +728,7 @@ async function fazerLogin(){
     if(!d.ok){ mostrarErroLogin(d.erro||'Credenciais inválidas'); btn.textContent='Entrar'; return; }
     usuarioLogado = d;
     document.getElementById('tela-login').style.display='none';
-    document.getElementById('app-wrapper').style.display='block';
+    document.getElementById('app-main').style.display='flex';
     document.getElementById('sidebar-user').textContent = d.nome + (d.perfil==='master'?' · MASTER':'');
     if(d.perfil==='master'||d.perfil==='admin') document.getElementById('nav-admin').style.display='flex';
     // Garante que o dashboard esteja visível
@@ -750,7 +749,7 @@ function mostrarErroLogin(msg){
 function fazerLogout(){
   usuarioLogado = null;
   document.getElementById('tela-login').style.display='flex';
-  document.getElementById('app-wrapper').style.display='none';
+  document.getElementById('app-main').style.display='none';
   document.getElementById('login-email').value='';
   document.getElementById('login-senha').value='';
   document.getElementById('login-erro').style.display='none';
