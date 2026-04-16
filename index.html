@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>importos</title>
+<title>importos</title><title>importos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 
 <style>
@@ -125,9 +125,45 @@ select option{background:var(--surface2)}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+/* Auth */
+.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:360px}
+.auth-logo{font-size:24px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px}
+.auth-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:28px}
+.auth-error{background:#2a0d0d;border:1px solid #4a1a1a;color:var(--danger);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:12px;display:none}
+.auth-error.show{display:block}
+.user-badge{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.user-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.admin-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.admin-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
+
+<!-- TELA DE LOGIN -->
+<div id="tela-login" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;width:360px;max-width:90vw">
+    <div style="font-size:22px;font-weight:500;letter-spacing:-.02em;margin-bottom:4px">importos</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:28px">GLOBAL TRADE INTELLIGENCE</div>
+    <div id="login-erro" style="background:#2a0d0d;border:1px solid #4a1a1a;color:var(--danger);font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:16px;display:none"></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" style="width:100%" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()">
+      </div>
+      <div>
+        <label style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px">Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" style="width:100%" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <button onclick="fazerLogin()" style="margin-top:4px;padding:10px;background:var(--accent);color:#0d0f12;border:none;border-radius:var(--radius-sm);font-family:var(--mono);font-size:12px;font-weight:500;cursor:pointer;width:100%;transition:background .15s" onmouseover="this.style.background='#00c985'" onmouseout="this.style.background='var(--accent)'">
+        <span id="login-btn-txt">Entrar</span>
+      </button>
+    </div>
+    <div style="margin-top:16px;font-size:10px;font-family:var(--mono);color:var(--muted);text-align:center">importos v2.0 · sa-east-1</div>
+  </div>
+</div>
+
+<div id="app-wrapper" style="display:none">
 <div class="app">
   <!-- Sidebar -->
   <div class="sidebar">
@@ -160,6 +196,23 @@ select option{background:var(--surface2)}
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M1 4h14M3 4V2h10v2M2 4l1 9h10l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Mercados
       </div>
+      <div class="nav-item" onclick="showPage('inteligencia')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M6 10.5S5 13 8 13s2-2.5 2-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 10v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Inteligência
+      </div>
+      <div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Admin
+      </div>
+    </nav>
+    <div style="padding:8px;border-top:1px solid var(--border)">
+      <div id="sidebar-user" style="font-size:11px;font-family:var(--mono);color:var(--muted);padding:8px 10px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div class="nav-item" onclick="fazerLogout()" style="color:var(--danger)">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sair
+      </div>
+    </div>
+  </div>
     </nav>
   </div>
 
@@ -171,6 +224,21 @@ select option{background:var(--surface2)}
       <div class="page-title">Dashboard</div>
       <div class="page-sub">Visão geral das simulações</div>
       <div class="metrics" id="dash-metrics"><div class="loading"><span class="spinner"></span>carregando...</div></div>
+
+      <!-- Ranking -->
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="section-label" style="margin-bottom:0">🏆 ranking — melhores oportunidades</div>
+          <div style="display:flex;gap:6px" id="ranking-filtros">
+            <button onclick="filtrarRanking('todos')" id="rf-todos" class="btn btn-sm" style="border-color:var(--accent);color:var(--accent)">Todos</button>
+            <button onclick="filtrarRanking('utensilios')" id="rf-utensilios" class="btn btn-sm">Utensílios</button>
+            <button onclick="filtrarRanking('eletronicos')" id="rf-eletronicos" class="btn btn-sm">Eletrônicos</button>
+            <button onclick="filtrarRanking('outros')" id="rf-outros" class="btn btn-sm">Outros</button>
+          </div>
+        </div>
+        <div id="ranking-list"></div>
+      </div>
+
       <div class="card">
         <div class="section-label">simulações recentes</div>
         <div class="table-wrap">
@@ -226,7 +294,7 @@ select option{background:var(--surface2)}
               </div>
               <div class="form-group">
                 <label>Qtd (unidades)</label>
-                <input type="number" id="s-qtd" value="1000" min="1">
+                <input type="number" id="s-qtd" value="1000" min="1" onchange="sugerirModal()" oninput="sugerirModal()">
               </div>
               <div class="form-group">
                 <label>FOB unit (USD)</label>
@@ -234,11 +302,31 @@ select option{background:var(--surface2)}
               </div>
               <div class="form-group">
                 <label>Peso unit (kg)</label>
-                <input type="number" id="s-peso" value="0.75" min="0" step="0.01">
+                <input type="number" id="s-peso" value="0.75" min="0" step="0.01" onchange="sugerirModal()" oninput="sugerirModal()">
               </div>
               <div class="form-group">
                 <label>Câmbio (R$/USD)</label>
                 <input type="number" id="s-cambio" value="5.80" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label>Comp unit (cm)</label>
+                <input type="number" id="s-comp" value="25" min="0" step="0.1" onchange="sugerirModal()" oninput="sugerirModal()">
+              </div>
+              <div class="form-group">
+                <label>Larg unit (cm)</label>
+                <input type="number" id="s-larg" value="25" min="0" step="0.1" onchange="sugerirModal()" oninput="sugerirModal()">
+              </div>
+              <div class="form-group">
+                <label>Alt unit (cm)</label>
+                <input type="number" id="s-alt" value="15" min="0" step="0.1" onchange="sugerirModal()" oninput="sugerirModal()">
+              </div>
+              <div class="form-group">
+                <label>Destino</label>
+                <select id="s-destino" onchange="sugerirModal(); atualizarImpostosPorDestino()">
+                  <option value="BR">🇧🇷 Brasil</option>
+                  <option value="US">🇺🇸 EUA</option>
+                  <option value="IT">🇮🇹 Itália</option>
+                </select>
               </div>
             </div>
           </div>
@@ -247,13 +335,14 @@ select option{background:var(--surface2)}
             <div class="section-label">logística e taxas</div>
             <div class="form-grid">
               <div class="form-group full">
-                <label>Modal</label>
-                <select id="s-modal">
+                <label>Modal <span id="modal-sugestao" style="font-size:10px;color:var(--accent);margin-left:8px;font-family:var(--mono)"></span></label>
+                <select id="s-modal" onchange="atualizarFretePadrao()">
                   <option value="maritimo_lcl">Marítimo LCL</option>
                   <option value="maritimo_fcl20">Marítimo FCL20</option>
                   <option value="maritimo_fcl40">Marítimo FCL40</option>
                   <option value="aereo">Aéreo</option>
                 </select>
+                <div id="modal-justificativa" style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;display:none"></div>
               </div>
               <div class="form-group">
                 <label>Frete internacional (USD)</label>
@@ -505,12 +594,224 @@ select option{background:var(--surface2)}
       <div id="mkt-results"></div>
     </div>
 
+    <!-- Inteligência por País -->
+    <div class="page" id="page-inteligencia">
+      <div class="page-title">Inteligência por País</div>
+      <div class="page-sub">Jogue a imagem do produto e veja análise completa — HS Code, impostos e preços por mercado</div>
+
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+        <!-- Upload -->
+        <div>
+          <div class="card">
+            <div class="section-label">imagem do produto</div>
+            <div id="intel-drop" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:12px"
+              onclick="document.getElementById('intel-input').click()"
+              ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+              ondragleave="this.style.borderColor='var(--border2)'"
+              ondrop="handleIntelDrop(event)">
+              <div id="intel-preview-wrap" style="display:none;margin-bottom:10px"><img id="intel-preview" style="max-width:100%;max-height:160px;border-radius:var(--radius-sm);object-fit:contain"></div>
+              <div id="intel-placeholder">
+                <svg width="28" height="28" fill="none" viewBox="0 0 32 32" style="margin:0 auto 8px;display:block;opacity:.4"><rect x="2" y="6" width="28" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16" r="5" stroke="currentColor" stroke-width="1.5"/></svg>
+                <div style="font-size:12px;color:var(--muted)">Clique ou arraste</div>
+              </div>
+            </div>
+            <input type="file" id="intel-input" accept="image/*" style="display:none" onchange="handleIntelSelect(event)">
+            <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="analisarTodosPaises()">Analisar todos os países</button>
+            <div id="intel-status" style="font-size:11px;font-family:var(--mono);color:var(--muted);text-align:center;min-height:16px"></div>
+          </div>
+
+          <!-- Resumo produto -->
+          <div class="card" style="margin-top:10px" id="intel-produto-card" style="display:none">
+            <div class="section-label">produto identificado</div>
+            <div id="intel-produto-info" style="font-size:12px;color:var(--muted2);line-height:1.6"></div>
+          </div>
+        </div>
+
+        <!-- Abas por país -->
+        <div>
+          <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px">
+            <button class="intel-tab active" onclick="switchIntelTab('BR')" id="tab-BR"
+              style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--surface2);color:var(--accent);cursor:pointer;transition:all .15s">
+              🇧🇷 Brasil
+            </button>
+            <button class="intel-tab" onclick="switchIntelTab('US')" id="tab-US"
+              style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s">
+              🇺🇸 EUA
+            </button>
+            <button class="intel-tab" onclick="switchIntelTab('IT')" id="tab-IT"
+              style="font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s">
+              🇮🇹 Itália
+            </button>
+          </div>
+
+          <div id="intel-panel-BR" class="intel-panel">
+            <div class="empty" style="padding:40px">Analise um produto para ver dados do Brasil</div>
+          </div>
+          <div id="intel-panel-US" class="intel-panel" style="display:none">
+            <div class="empty" style="padding:40px">Analise um produto para ver dados dos EUA</div>
+          </div>
+          <div id="intel-panel-IT" class="intel-panel" style="display:none">
+            <div class="empty" style="padding:40px">Analise um produto para ver dados da Itália</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="page" id="page-admin">
+      <div class="page-title">Administração</div>
+      <div class="page-sub">Gerenciamento de usuários</div>
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
+        <div class="card">
+          <div class="section-label">usuários cadastrados</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Email</th><th>Perfil</th><th>Último acesso</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="admin-users-table"><tr><td colspan="6"><div class="loading"><span class="spinner"></span>carregando...</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-label">novo usuário</div>
+          <div class="alert alert-success" id="admin-alert-ok">Usuário criado!</div>
+          <div class="alert alert-error" id="admin-alert-err" style="display:none"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="form-group">
+              <label>Nome completo</label>
+              <input type="text" id="adm-nome" placeholder="João Silva">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="adm-email" placeholder="joao@email.com">
+            </div>
+            <div class="form-group">
+              <label>Senha</label>
+              <input type="password" id="adm-senha" placeholder="mínimo 6 caracteres">
+            </div>
+            <div class="form-group">
+              <label>Perfil</label>
+              <select id="adm-perfil">
+                <option value="usuario">Usuário</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="criarUsuario()" style="margin-top:4px">Criar usuário</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
+</div><!-- fecha app-wrapper -->
 
 <script>
 const SUPA_URL = 'https://cxogqprgmdkbpmlcdorg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4b2dxcHJnbWRrYnBtbGNkb3JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODg5MzksImV4cCI6MjA5MDY2NDkzOX0.URn4t-gh3mL8HpDUz78e_ec-B-neXukCZDTAr9OpSIs';
+const AUTH_URL = `${SUPA_URL}/functions/v1/importos-auth`;
+
+let usuarioLogado = null;
+
+// ===== LOGIN / LOGOUT =====
+async function fazerLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const senha = document.getElementById('login-senha').value;
+  if(!email||!senha){ mostrarErroLogin('Preencha email e senha.'); return; }
+  const btn = document.getElementById('login-btn-txt');
+  btn.textContent = 'Entrando...';
+  try {
+    const r = await fetch(AUTH_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({action:'login', email, senha})
+    });
+    const d = await r.json();
+    if(!d.ok){ mostrarErroLogin(d.erro||'Credenciais inválidas'); btn.textContent='Entrar'; return; }
+    usuarioLogado = d;
+    document.getElementById('tela-login').style.display='none';
+    document.getElementById('app-wrapper').style.display='block';
+    document.getElementById('sidebar-user').textContent = d.nome + (d.perfil==='master'?' · MASTER':'');
+    if(d.perfil==='master'||d.perfil==='admin') document.getElementById('nav-admin').style.display='flex';
+    loadDashboard();
+  } catch(e){ mostrarErroLogin('Erro de conexão'); btn.textContent='Entrar'; }
+}
+
+function mostrarErroLogin(msg){
+  const el = document.getElementById('login-erro');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function fazerLogout(){
+  usuarioLogado = null;
+  document.getElementById('tela-login').style.display='flex';
+  document.getElementById('app-wrapper').style.display='none';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-senha').value='';
+  document.getElementById('login-erro').style.display='none';
+  document.getElementById('login-btn-txt').textContent='Entrar';
+  document.getElementById('nav-admin').style.display='none';
+}
+
+// ===== ADMIN =====
+async function loadAdmin(){
+  const r = await fetch(AUTH_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+    body: JSON.stringify({action:'listar'})
+  });
+  const d = await r.json();
+  const tbody = document.getElementById('admin-users-table');
+  if(!d.ok||!d.usuarios?.length){
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty">Nenhum usuário cadastrado</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = d.usuarios.map(u=>`
+    <tr>
+      <td class="td-name">${u.nome||'—'}</td>
+      <td style="font-size:12px">${u.email}</td>
+      <td><span class="badge ${u.perfil==='master'||u.perfil==='admin'?'badge-pos':'badge-gray'}">${u.perfil}</span></td>
+      <td style="font-size:11px;font-family:var(--mono)">${u.ultimo_acesso?new Date(u.ultimo_acesso).toLocaleDateString('pt-BR'):'nunca'}</td>
+      <td><span class="badge ${u.ativo?'badge-pos':'badge-neg'}">${u.ativo?'ativo':'inativo'}</span></td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="toggleUsuario(${u.id})">${u.ativo?'Desativar':'Ativar'}</button>
+        <button class="btn btn-sm btn-danger" onclick="removerUsuario(${u.id})">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function criarUsuario(){
+  const nome=document.getElementById('adm-nome').value.trim();
+  const email=document.getElementById('adm-email').value.trim();
+  const senha=document.getElementById('adm-senha').value;
+  const perfil=document.getElementById('adm-perfil').value;
+  if(!nome||!email||!senha){showAdminAlert('Preencha todos os campos.',true);return;}
+  if(senha.length<6){showAdminAlert('Senha mínimo 6 caracteres.',true);return;}
+  const r = await fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY},body:JSON.stringify({action:'criar',nome,email,senha,perfil})});
+  const d = await r.json();
+  if(!d.ok){showAdminAlert(d.erro||'Erro ao criar.',true);return;}
+  showAdminAlert('Usuário criado com sucesso!');
+  ['adm-nome','adm-email','adm-senha'].forEach(id=>document.getElementById(id).value='');
+  loadAdmin();
+}
+
+async function toggleUsuario(id){
+  await fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY},body:JSON.stringify({action:'toggle_ativo',usuario_id:id})});
+  loadAdmin();
+}
+
+async function removerUsuario(id){
+  if(!confirm('Remover este usuário?')) return;
+  await fetch(AUTH_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY},body:JSON.stringify({action:'remover',usuario_id:id})});
+  loadAdmin();
+}
+
+function showAdminAlert(msg, erro=false){
+  const ok=document.getElementById('admin-alert-ok');
+  const er=document.getElementById('admin-alert-err');
+  if(erro){er.textContent=msg;er.style.display='block';ok.classList.remove('show');setTimeout(()=>er.style.display='none',3000);}
+  else{ok.textContent=msg;ok.classList.add('show');er.style.display='none';setTimeout(()=>ok.classList.remove('show'),3000);}
+}
 
 async function sbGet(table, select='*', order='created_at.desc'){
   const url = `${SUPA_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=${order}`;
@@ -545,10 +846,99 @@ function showPage(id){
   if(id==='dashboard') loadDashboard();
   if(id==='produtos') loadProdutos();
   if(id==='historico') loadHistorico();
+  if(id==='admin') loadAdmin();
 }
 function showAlert(id, ms=3000){ const el=document.getElementById(id); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),ms); }
 
 // ---- Dashboard ----
+let todasSimulacoes = [];
+
+function calcularConfianca(s){
+  const roi = parseFloat(s.roi||0)*100;
+  const score = s.score||0;
+  // Confiança baseada em score + ROI + se tem lucro positivo
+  if(score >= 60 && roi >= 25) return {label:'Alta', color:'var(--accent)', stars:'★★★'};
+  if(score >= 35 && roi >= 10) return {label:'Média', color:'var(--warn)', stars:'★★☆'};
+  return {label:'Baixa', color:'var(--danger)', stars:'★☆☆'};
+}
+
+function inferirCategoria(s){
+  const ncm = s.ncm||'';
+  const nome = (s.nome||'').toLowerCase();
+  if(ncm.startsWith('39')||ncm.startsWith('44')||nome.includes('organiz')||nome.includes('utens')||nome.includes('cozinha')) return 'utensilios';
+  if(ncm.startsWith('84')||ncm.startsWith('85')||nome.includes('eletron')||nome.includes('celular')||nome.includes('fone')) return 'eletronicos';
+  if(ncm.startsWith('61')||ncm.startsWith('62')||nome.includes('roupa')||nome.includes('vestuario')) return 'vestuario';
+  return 'outros';
+}
+
+let rankingFiltroAtual = 'todos';
+
+function filtrarRanking(filtro){
+  rankingFiltroAtual = filtro;
+  document.querySelectorAll('[id^="rf-"]').forEach(b=>{
+    b.style.borderColor='var(--border2)';
+    b.style.color='var(--muted)';
+  });
+  const btn = document.getElementById('rf-'+filtro);
+  if(btn){ btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; }
+  renderRanking(todasSimulacoes);
+}
+
+function renderRanking(data){
+  const el = document.getElementById('ranking-list');
+  if(!data.length){ el.innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação para ranquear</div>'; return; }
+
+  let filtrado = data;
+  if(rankingFiltroAtual !== 'todos'){
+    filtrado = data.filter(s => inferirCategoria(s) === rankingFiltroAtual);
+  }
+
+  // Ordena por score desc, ROI desc, pega top 5
+  const top5 = [...filtrado]
+    .sort((a,b) => {
+      const sa = (a.score||0)*2 + parseFloat(a.roi||0)*100;
+      const sb = (b.score||0)*2 + parseFloat(b.roi||0)*100;
+      return sb-sa;
+    })
+    .slice(0,5);
+
+  if(!top5.length){ el.innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação nesta categoria</div>'; return; }
+
+  const medalhas = ['🥇','🥈','🥉','4º','5º'];
+
+  el.innerHTML = top5.map((s,i)=>{
+    const roi = parseFloat(s.roi||0)*100;
+    const conf = calcularConfianca(s);
+    const cat = inferirCategoria(s);
+    const catLabel = {utensilios:'Utensílios',eletronicos:'Eletrônicos',vestuario:'Vestuário',outros:'Outros'}[cat]||cat;
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
+      <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0">${medalhas[i]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.nome||'—'}</div>
+        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+          <span class="meta-chip" style="font-size:10px">${s.ncm}</span>
+          <span class="meta-chip" style="font-size:10px">${catLabel}</span>
+          <span class="meta-chip" style="font-size:10px">${(s.modal||'').replace('maritimo_','').toUpperCase()}</span>
+          <span class="meta-chip" style="font-size:10px">${Number(s.qtd||0).toLocaleString('pt-BR')} un</span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(1)}%</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">score ${s.score||0}/100</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;width:70px">
+        <div style="font-size:14px;color:${conf.color}">${conf.stars}</div>
+        <div style="font-size:10px;font-family:var(--mono);color:${conf.color}">${conf.label}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:500;font-family:var(--mono)">${fmtBRL(parseFloat(s.lucro_total||0))}</div>
+        <div style="font-size:10px;color:var(--muted)">lucro total</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 async function loadDashboard(){
   let data;
   try {
@@ -557,6 +947,8 @@ async function loadDashboard(){
     document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1">Erro ao carregar: ${e.message}</div>`;
     return;
   }
+  todasSimulacoes = data;
+  renderRanking(data);
   const lucro = data.reduce((a,s)=>a+(parseFloat(s.lucro_total)||0),0);
   const impostos = data.reduce((a,s)=>a+(parseFloat(s.total_impostos)||0),0);
   const melhorRoi = data.length ? Math.max(...data.map(s=>(parseFloat(s.roi)||0)*100)) : 0;
@@ -665,61 +1057,119 @@ async function loadHistorico(){
 // ---- Simulador ----
 let ultimoCalculo = null;
 
+// Impostos por destino
+function calcularImpostosPorDestino(destino, cif_usd, cif_brl, frete, cambio, ii_pct, ipi_pct, icms_pct, pis_pct, cofins_pct, despachante, locais){
+  if(destino === 'US'){
+    // EUA: Customs Duty (II) + Section 301 China tariff embutido no II
+    // Base = CIF USD. Sem cascata. Sem IPI/ICMS/PIS/COFINS
+    const ii_usd  = cif_usd * ii_pct;
+    const mpf     = Math.min(Math.max(cif_usd * 0.003464, 27.23), 528.33); // Merchandise Processing Fee
+    const hmf     = cif_usd * 0.001250; // Harbor Maintenance Fee (marítimo)
+    const total_usd = ii_usd + mpf + hmf;
+    const total_brl = total_usd * cambio;
+    return {
+      linhas: [
+        {label:`Customs Duty (${(ii_pct*100).toFixed(1)}%)`, val: ii_usd*cambio, moeda:'USD', val_usd: ii_usd},
+        {label:'MPF (0.3464%)', val: mpf*cambio, moeda:'USD', val_usd: mpf},
+        {label:'HMF (0.125%)', val: hmf*cambio, moeda:'USD', val_usd: hmf},
+      ],
+      totalImpostos: total_brl,
+      afrmm: 0,
+      nota: '⚠ Section 301 tariff China→EUA já incluído na alíquota de II'
+    };
+  } else if(destino === 'IT'){
+    // Itália/UE: EU Customs Duty + IVA (22%) calculado por dentro
+    // Base = CIF EUR. Convertemos USD→EUR via câmbio
+    const cambioEUR = cambio * 0.92; // aproximação USD→EUR (ajustável)
+    const cif_eur   = cif_usd * cambioEUR / cambio; // CIF em EUR
+    const duty_eur  = cif_eur * ii_pct;
+    const base_iva  = cif_eur + duty_eur; // IVA incide sobre CIF + duty
+    const iva_rate  = 0.22; // IVA padrão Itália
+    const iva_eur   = base_iva * iva_rate;
+    const total_eur = duty_eur + iva_eur;
+    const total_brl = total_eur * (cambio / 0.92);
+    return {
+      linhas: [
+        {label:`EU Customs Duty (${(ii_pct*100).toFixed(1)}%)`, val: duty_eur*(cambio/0.92), moeda:'EUR', val_usd: duty_eur/cambioEUR*cambio},
+        {label:'IVA Italiano (22%)', val: iva_eur*(cambio/0.92), moeda:'EUR', val_usd: iva_eur/cambioEUR*cambio},
+      ],
+      totalImpostos: total_brl,
+      afrmm: 0,
+      nota: '⚠ Câmbio EUR/USD estimado em 0.92 — ajuste conforme taxa do dia'
+    };
+  } else {
+    // Brasil: II + IPI + ICMS (por dentro) + PIS + COFINS + AFRMM
+    const afrmm     = frete * cambio * 0.25;
+    const ii_val    = cif_brl * ii_pct;
+    const ipi_val   = (cif_brl + ii_val) * ipi_pct;
+    const baseIcms  = (cif_brl + ii_val + ipi_val + afrmm + locais + despachante) / (1 - icms_pct/100);
+    const icms_val  = baseIcms * (icms_pct/100);
+    const pis_val   = cif_brl * pis_pct;
+    const cofins_val= cif_brl * cofins_pct;
+    const totalImpostos = ii_val + ipi_val + icms_val + pis_val + cofins_val + afrmm;
+    return {
+      linhas: [
+        {label:`II (${(ii_pct*100).toFixed(1)}%)`,      val: ii_val},
+        {label:`IPI (${(ipi_pct*100).toFixed(1)}%)`,    val: ipi_val},
+        {label:`ICMS (${icms_pct}%)`,                   val: icms_val},
+        {label:'PIS/COFINS',                             val: pis_val+cofins_val},
+        {label:'AFRMM (25% frete)',                      val: afrmm},
+      ],
+      totalImpostos,
+      afrmm,
+      nota: ''
+    };
+  }
+}
+
 function calcular(){
-  const qtd = parseFloat(document.getElementById('s-qtd').value)||0;
-  const fobUnit = parseFloat(document.getElementById('s-fob').value)||0;
-  const peso = parseFloat(document.getElementById('s-peso').value)||0;
-  const cambio = parseFloat(document.getElementById('s-cambio').value)||0;
-  const frete = parseFloat(document.getElementById('s-frete').value)||0;
-  const seguro = parseFloat(document.getElementById('s-seguro').value)||0;
-  const despachante = parseFloat(document.getElementById('s-despachante').value)||0;
-  const locais = parseFloat(document.getElementById('s-locais').value)||0;
-  const ii_pct = parseFloat(document.getElementById('s-ii').value)/100||0;
-  const ipi_pct = parseFloat(document.getElementById('s-ipi').value)/100||0;
-  const icms_pct = parseFloat(document.getElementById('s-icms').value)||18;
-  const pis_pct = parseFloat(document.getElementById('s-pis').value)/100||0;
-  const cofins_pct = parseFloat(document.getElementById('s-cofins').value)/100||0;
-  const margem = parseFloat(document.getElementById('s-margem').value)/100||0.25;
+  const qtd          = parseFloat(document.getElementById('s-qtd').value)||0;
+  const fobUnit      = parseFloat(document.getElementById('s-fob').value)||0;
+  const peso         = parseFloat(document.getElementById('s-peso').value)||0;
+  const cambio       = parseFloat(document.getElementById('s-cambio').value)||0;
+  const frete        = parseFloat(document.getElementById('s-frete').value)||0;
+  const seguro       = parseFloat(document.getElementById('s-seguro').value)||0;
+  const despachante  = parseFloat(document.getElementById('s-despachante').value)||0;
+  const locais       = parseFloat(document.getElementById('s-locais').value)||0;
+  const ii_pct       = parseFloat(document.getElementById('s-ii').value)/100||0;
+  const ipi_pct      = parseFloat(document.getElementById('s-ipi').value)/100||0;
+  const icms_pct     = parseFloat(document.getElementById('s-icms').value)||18;
+  const pis_pct      = parseFloat(document.getElementById('s-pis').value)/100||0;
+  const cofins_pct   = parseFloat(document.getElementById('s-cofins').value)/100||0;
+  const margem       = parseFloat(document.getElementById('s-margem').value)/100||0.25;
   const comissao_pct = parseFloat(document.getElementById('s-comissao').value)/100||0;
-  const precoVenda = parseFloat(document.getElementById('s-preco').value)||0;
+  const precoVenda   = parseFloat(document.getElementById('s-preco').value)||0;
+  const destino      = document.getElementById('s-destino')?.value || 'BR';
 
   const fobTotal = fobUnit * qtd;
-  const cif_usd = fobTotal + frete + seguro;
-  const cif_brl = cif_usd * cambio;
+  const cif_usd  = fobTotal + frete + seguro;
+  const cif_brl  = cif_usd * cambio;
 
-  const afrmm = (frete * cambio) * 0.25;
-  const ii_val = cif_brl * ii_pct;
-  const ipi_val = (cif_brl + ii_val) * ipi_pct;
-  const baseIcms = (cif_brl + ii_val + ipi_val + afrmm + locais + despachante) / (1 - icms_pct/100);
-  const icms_val = baseIcms * (icms_pct/100);
-  const pis_val = cif_brl * pis_pct;
-  const cofins_val = cif_brl * cofins_pct;
-  const totalImpostos = ii_val + ipi_val + icms_val + pis_val + cofins_val + afrmm;
+  // Calcula impostos pelo destino
+  const imp = calcularImpostosPorDestino(destino, cif_usd, cif_brl, frete, cambio, ii_pct, ipi_pct, icms_pct, pis_pct, cofins_pct, despachante, locais);
+  const totalImpostos = imp.totalImpostos;
 
   const custoTotal = cif_brl + totalImpostos + despachante + locais;
-  const custoUnit = custoTotal / qtd;
+  const custoUnit  = custoTotal / qtd;
 
-  // Certificações adicionais
+  // Certificações
   let certCost = 0;
   if(chips.inmetro) certCost += 3500;
-  if(chips.anvisa) certCost += 5000;
-  if(chips.mapa) certCost += 2000;
+  if(chips.anvisa)  certCost += 5000;
+  if(chips.mapa)    certCost += 2000;
   const custoTotalComCert = custoTotal + certCost;
-  const custoUnitComCert = custoTotalComCert / qtd;
+  const custoUnitComCert  = custoTotalComCert / qtd;
 
-  // Preço mínimo com margem
-  const somaPct = margem + comissao_pct;
+  const somaPct    = margem + comissao_pct;
   const precoMinimo = custoUnitComCert / (1 - somaPct);
-
-  // Resultado com preço informado ou preço mínimo
-  const precoFinal = precoVenda > 0 ? precoVenda : precoMinimo;
+  const precoFinal  = precoVenda > 0 ? precoVenda : precoMinimo;
   const receitaTotal = precoFinal * qtd;
-  const lucroUnit = precoFinal - custoUnitComCert - (precoFinal * comissao_pct);
-  const lucroTotal = lucroUnit * qtd;
-  const roi = (lucroTotal / custoTotalComCert) * 100;
-  const margReal = lucroTotal / receitaTotal * 100;
+  const lucroUnit   = precoFinal - custoUnitComCert - (precoFinal * comissao_pct);
+  const lucroTotal  = lucroUnit * qtd;
+  const roi         = (lucroTotal / custoTotalComCert) * 100;
+  const margReal    = lucroTotal / receitaTotal * 100;
 
-  // Score 0–100
+  // Score
   let score = 0;
   if(roi > 30) score += 35; else if(roi > 15) score += 25; else if(roi > 0) score += 10;
   if(fobUnit < 3) score += 20; else if(fobUnit < 10) score += 10;
@@ -733,27 +1183,25 @@ function calcular(){
     ncm: document.getElementById('s-ncm').value,
     modal: document.getElementById('s-modal').value,
     origem: document.getElementById('s-origem').value,
-    uf_destino: document.getElementById('s-uf').value,
+    uf_destino: destino,
     qtd, fob_unit: fobUnit, cambio, roi_pct: roi, score,
     preco_sugerido: precoMinimo, preco_minimo: precoMinimo,
     lucro_total: lucroTotal, custo_total: custoTotalComCert,
     total_impostos: totalImpostos,
-    dados: {
-      cif_usd, cif_brl, fobTotal, fobUnit, afrmm,
-      ii_val, ipi_val, icms_val, pis_val, cofins_val,
-      totalImpostos, custoTotal: custoTotalComCert, custoUnit: custoUnitComCert,
+    dados: { cif_usd, cif_brl, fobTotal, fobUnit, totalImpostos,
+      custoTotal: custoTotalComCert, custoUnit: custoUnitComCert,
       precoMinimo, precoFinal, lucroTotal, roi, score,
-      margem: margReal, cambio, qtd, modal: document.getElementById('s-modal').value
-    }
+      margem: margReal, cambio, qtd, modal: document.getElementById('s-modal').value, destino }
   };
 
   const scoreColor = score >= 60 ? 'var(--accent)' : score >= 35 ? 'var(--warn)' : 'var(--danger)';
+  const flagDestino = {BR:'🇧🇷', US:'🇺🇸', IT:'🇮🇹'}[destino]||'';
   document.getElementById('result-empty').style.display = 'none';
   const rc = document.getElementById('result-content');
   rc.style.display = 'block';
   rc.innerHTML = `
     <div style="margin-bottom:12px">
-      <div style="font-size:11px;font-family:var(--mono);color:var(--muted)">preço mínimo / unit</div>
+      <div style="font-size:11px;font-family:var(--mono);color:var(--muted)">preço mínimo / unit ${flagDestino}</div>
       <div class="result-big" style="color:var(--warn)">${fmtBRL(precoMinimo)}</div>
       ${precoVenda>0?`<div style="font-size:11px;color:var(--muted);font-family:var(--mono)">preço informado: ${fmtBRL(precoVenda)}</div>`:''}
     </div>
@@ -771,13 +1219,10 @@ function calcular(){
     <div class="divider"></div>
     <div class="result-row"><span class="result-label">CIF (USD)</span><span class="result-val">${fmtUSD(cif_usd)}</span></div>
     <div class="result-row"><span class="result-label">CIF (BRL)</span><span class="result-val">${fmtBRL(cif_brl)}</span></div>
-    <div class="result-row"><span class="result-label">AFRMM</span><span class="result-val">${fmtBRL(afrmm)}</span></div>
     <div class="divider"></div>
-    <div class="result-row"><span class="result-label">II (${(ii_pct*100).toFixed(0)}%)</span><span class="result-val">${fmtBRL(ii_val)}</span></div>
-    <div class="result-row"><span class="result-label">IPI (${(ipi_pct*100).toFixed(0)}%)</span><span class="result-val">${fmtBRL(ipi_val)}</span></div>
-    <div class="result-row"><span class="result-label">ICMS (${icms_pct}%)</span><span class="result-val">${fmtBRL(icms_val)}</span></div>
-    <div class="result-row"><span class="result-label">PIS/COFINS</span><span class="result-val">${fmtBRL(pis_val+cofins_val)}</span></div>
+    ${imp.linhas.map(l=>`<div class="result-row"><span class="result-label">${l.label}</span><span class="result-val">${fmtBRL(l.val)}</span></div>`).join('')}
     <div class="result-row" style="font-weight:500"><span class="result-label" style="color:var(--warn)">Total impostos</span><span class="result-val" style="color:var(--warn)">${fmtBRL(totalImpostos)}</span></div>
+    ${imp.nota?`<div style="font-size:10px;color:var(--warn);font-family:var(--mono);margin-top:4px">${imp.nota}</div>`:''}
     <div class="divider"></div>
     <div class="result-row"><span class="result-label">Custo unit</span><span class="result-val">${fmtBRL(custoUnitComCert)}</span></div>
     <div class="result-row"><span class="result-label">Custo total</span><span class="result-val">${fmtBRL(custoTotalComCert)}</span></div>
@@ -824,7 +1269,273 @@ function limparSim(){
 // Init
 loadDashboard();
 
-// ===== IDENTIFICAR POR IMAGEM =====
+// ===== SUGESTÃO AUTOMÁTICA DE MODAL =====
+
+// Fretes típicos por destino e modal (USD) - origem China
+const FRETE_POR_DESTINO = {
+  BR: { aereo: 1200, maritimo_lcl: 950,  maritimo_fcl20: 1800, maritimo_fcl40: 2800 },
+  US: { aereo: 800,  maritimo_lcl: 650,  maritimo_fcl20: 1200, maritimo_fcl40: 2000 },
+  IT: { aereo: 900,  maritimo_lcl: 750,  maritimo_fcl20: 1400, maritimo_fcl40: 2200 },
+};
+
+// Limites de m³ por modal (capacidade útil)
+const LIMITES_M3 = {
+  aereo:          1,    // até ~1 m³ (aéreo faz sentido)
+  maritimo_lcl:   12,   // até ~12 m³ (1/2 container 20')
+  maritimo_fcl20: 25,   // até 25 m³ (container 20')
+  maritimo_fcl40: 55,   // até 55 m³ (container 40')
+};
+
+// Limites de peso por modal (kg)
+const LIMITES_KG = {
+  aereo:          150,
+  maritimo_lcl:   3000,
+  maritimo_fcl20: 14000,
+  maritimo_fcl40: 26000,
+};
+
+function calcularM3Total(){
+  const qtd  = parseFloat(document.getElementById('s-qtd').value)||0;
+  const comp = parseFloat(document.getElementById('s-comp')?.value)||25;
+  const larg = parseFloat(document.getElementById('s-larg')?.value)||25;
+  const alt  = parseFloat(document.getElementById('s-alt')?.value)||15;
+  return (comp/100) * (larg/100) * (alt/100) * qtd;
+}
+
+function sugerirModal(){
+  const qtd      = parseFloat(document.getElementById('s-qtd').value)||0;
+  const pesoUnit = parseFloat(document.getElementById('s-peso').value)||0;
+  const pesoTotal = qtd * pesoUnit;
+  const m3Total   = calcularM3Total();
+  const destino   = document.getElementById('s-destino')?.value || 'BR';
+
+  let modal, motivo;
+
+  if(m3Total <= LIMITES_M3.aereo && pesoTotal <= LIMITES_KG.aereo){
+    modal  = 'aereo';
+    motivo = `${m3Total.toFixed(2)} m³ · ${pesoTotal.toFixed(0)} kg → Aéreo (até 1 m³ / 150 kg)`;
+  } else if(m3Total <= LIMITES_M3.maritimo_lcl && pesoTotal <= LIMITES_KG.maritimo_lcl){
+    modal  = 'maritimo_lcl';
+    motivo = `${m3Total.toFixed(2)} m³ · ${pesoTotal.toFixed(0)} kg → LCL groupage (até 12 m³ / 3 ton)`;
+  } else if(m3Total <= LIMITES_M3.maritimo_fcl20 && pesoTotal <= LIMITES_KG.maritimo_fcl20){
+    modal  = 'maritimo_fcl20';
+    motivo = `${m3Total.toFixed(2)} m³ · ${pesoTotal.toFixed(0)} kg → FCL 20' (até 25 m³ / 14 ton)`;
+  } else {
+    modal  = 'maritimo_fcl40';
+    motivo = `${m3Total.toFixed(2)} m³ · ${pesoTotal.toFixed(0)} kg → FCL 40' (até 55 m³ / 26 ton)`;
+  }
+
+  document.getElementById('s-modal').value = modal;
+
+  const icons = {aereo:'✈', maritimo_lcl:'⚓', maritimo_fcl20:'🚢', maritimo_fcl40:'🚢'};
+  document.getElementById('modal-sugestao').textContent = icons[modal]+' sugerido';
+
+  const jEl = document.getElementById('modal-justificativa');
+  jEl.textContent = motivo;
+  jEl.style.display = 'block';
+
+  atualizarFretePadrao();
+}
+
+function atualizarFretePadrao(){
+  const modal   = document.getElementById('s-modal').value;
+  const destino = document.getElementById('s-destino')?.value || 'BR';
+  const tabela  = FRETE_POR_DESTINO[destino] || FRETE_POR_DESTINO.BR;
+  if(tabela[modal]) document.getElementById('s-frete').value = tabela[modal];
+}
+
+function atualizarImpostosPorDestino(){
+  const destino = document.getElementById('s-destino')?.value || 'BR';
+  const secII   = document.getElementById('s-ii');
+  const secIPI  = document.getElementById('s-ipi');
+  const secICMS = document.getElementById('s-icms');
+  const secPIS  = document.getElementById('s-pis');
+  const secCOF  = document.getElementById('s-cofins');
+  const labelII = secII?.previousElementSibling;
+
+  if(destino === 'US'){
+    // EUA: só customs duty (já inclui Section 301). Resto não se aplica
+    if(secII)  secII.value  = '7.5';  // Section 301 típico para utensílios CH→US
+    if(secIPI) { secIPI.value='0';  secIPI.disabled=true; }
+    if(secICMS){ secICMS.value='0'; secICMS.disabled=true; }
+    if(secPIS) { secPIS.value='0';  secPIS.disabled=true; }
+    if(secCOF) { secCOF.value='0';  secCOF.disabled=true; }
+    if(labelII) labelII.textContent='Customs Duty + S.301 (%)';
+    document.getElementById('s-cambio').placeholder='Taxa USD/BRL';
+  } else if(destino === 'IT'){
+    // Itália/UE: EU duty + IVA calculado automaticamente
+    if(secII)  secII.value  = '5.7'; // EU duty típico para utensílios domésticos
+    if(secIPI) { secIPI.value='0';  secIPI.disabled=true; }
+    if(secICMS){ secICMS.value='0'; secICMS.disabled=true; }
+    if(secPIS) { secPIS.value='0';  secPIS.disabled=true; }
+    if(secCOF) { secCOF.value='0';  secCOF.disabled=true; }
+    if(labelII) labelII.textContent='EU Customs Duty (%) — IVA 22% automático';
+  } else {
+    // Brasil: todos os campos ativos
+    if(secII)  secII.value  = '16.2';
+    if(secIPI) { secIPI.value='6.5';  secIPI.disabled=false; }
+    if(secICMS){ secICMS.value='18';  secICMS.disabled=false; }
+    if(secPIS) { secPIS.value='2.1';  secPIS.disabled=false; }
+    if(secCOF) { secCOF.value='9.65'; secCOF.disabled=false; }
+    if(labelII) labelII.textContent='II (%)';
+  }
+  atualizarFretePadrao();
+}
+
+// ===== INTELIGÊNCIA POR PAÍS =====
+let intelBase64 = null;
+let intelMime = null;
+let intelResultados = {};
+
+function handleIntelSelect(e){ const f=e.target.files[0]; if(f) loadIntelFile(f); }
+function handleIntelDrop(e){
+  e.preventDefault();
+  document.getElementById('intel-drop').style.borderColor='var(--border2)';
+  const f=e.dataTransfer.files[0]; if(f) loadIntelFile(f);
+}
+function loadIntelFile(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const res=ev.target.result;
+    intelBase64=res.split(',')[1];
+    intelMime=file.type||'image/jpeg';
+    document.getElementById('intel-preview').src=res;
+    document.getElementById('intel-preview-wrap').style.display='block';
+    document.getElementById('intel-placeholder').style.display='none';
+  };
+  r.readAsDataURL(file);
+}
+
+function switchIntelTab(pais){
+  document.querySelectorAll('.intel-tab').forEach(t=>{
+    t.style.background='transparent';
+    t.style.color='var(--muted)';
+  });
+  document.querySelectorAll('.intel-panel').forEach(p=>p.style.display='none');
+  document.getElementById('tab-'+pais).style.background='var(--surface2)';
+  document.getElementById('tab-'+pais).style.color='var(--accent)';
+  document.getElementById('intel-panel-'+pais).style.display='block';
+}
+
+async function comprimirIntel(base64, mime){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const max=512; let w=img.width,h=img.height;
+      if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve({data:canvas.toDataURL('image/jpeg',0.5).split(',')[1],mime:'image/jpeg'});
+    };
+    img.src=`data:${mime};base64,${base64}`;
+  });
+}
+
+async function analisarPais(pais){
+  const statusEl=document.getElementById('intel-status');
+  const nomes={BR:'Brasil',US:'EUA',IT:'Itália'};
+  const flags={BR:'🇧🇷',US:'🇺🇸',IT:'🇮🇹'};
+
+  // Mostra loading no painel
+  document.getElementById('intel-panel-'+pais).innerHTML=`
+    <div class="card"><div style="text-align:center;padding:32px;color:var(--muted);font-family:var(--mono);font-size:12px">
+      <span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:8px"></span>
+      Buscando dados para ${flags[pais]} ${nomes[pais]}...
+    </div></div>`;
+
+  try {
+    const {data:img,mime:m} = await comprimirIntel(intelBase64, intelMime);
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body:JSON.stringify({action:'inteligencia',pais,image_base64:img,image_mime:m})
+    });
+    if(!resp.ok) throw new Error('Edge Function: '+resp.status);
+    const d = await resp.json();
+    if(d.error) throw new Error(d.error);
+    intelResultados[pais]=d;
+    renderIntelPais(pais,d);
+
+    // Atualiza info do produto (usa o primeiro que retornar)
+    if(d.produto && !document.getElementById('intel-produto-info').textContent){
+      document.getElementById('intel-produto-info').innerHTML=`
+        <div style="font-weight:500;color:var(--text);margin-bottom:4px">${d.produto}</div>
+        <div>${d.descricao||''}</div>
+        <div style="margin-top:6px"><span class="badge badge-gray">${d.hs_code||''}</span> <span style="font-size:11px;color:var(--muted)">${d.hs_descricao||''}</span></div>`;
+      document.getElementById('intel-produto-card').style.display='block';
+    }
+  } catch(e){
+    document.getElementById('intel-panel-'+pais).innerHTML=`
+      <div class="card"><div style="color:var(--danger);font-size:13px;padding:8px">Erro ${nomes[pais]}: ${e.message}</div></div>`;
+  }
+}
+
+async function analisarTodosPaises(){
+  if(!intelBase64){alert('Selecione uma imagem primeiro.');return;}
+  intelResultados={};
+  document.getElementById('intel-status').textContent='Analisando 3 países...';
+  document.getElementById('intel-produto-info').textContent='';
+
+  // Dispara os 3 em paralelo
+  await Promise.all(['BR','US','IT'].map(p=>analisarPais(p)));
+  document.getElementById('intel-status').textContent='✓ Análise concluída';
+}
+
+function renderIntelPais(pais, d){
+  const moedas={BR:'R$',US:'$',IT:'€'};
+  const simbolo=moedas[pais]||'$';
+  const fmtP = v => v ? simbolo+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const oppColor = o => o==='alta'?'var(--accent)':o==='media'?'var(--warn)':'var(--danger)';
+
+  let html = `
+  <!-- HS Code e Impostos -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="card">
+      <div class="section-label">HS Code</div>
+      <div style="font-size:20px;font-weight:500;font-family:var(--mono);color:var(--accent);margin-bottom:4px">${d.hs_code||'—'}</div>
+      <div style="font-size:12px;color:var(--muted2)">${d.hs_descricao||''}</div>
+    </div>
+    <div class="card">
+      <div class="section-label">Impostos de importação</div>
+      <div style="font-size:18px;font-weight:500;font-family:var(--mono);color:var(--warn);margin-bottom:4px">${d.impostos?.aliquota_total_estimada||'—'}</div>
+      <div style="font-size:11px;color:var(--muted)">${d.impostos?.resumo||''}</div>
+      ${d.impostos?.detalhes?.length?`<div style="margin-top:6px">${d.impostos.detalhes.map(i=>`<div style="font-size:10px;font-family:var(--mono);color:var(--muted);padding:1px 0">• ${i}</div>`).join('')}</div>`:''}
+    </div>
+  </div>
+
+  <!-- Oportunidade e Preço sugerido -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="card">
+      <div class="section-label">Oportunidade de mercado</div>
+      <div style="font-size:20px;font-weight:500;color:${oppColor(d.oportunidade)};text-transform:capitalize">${d.oportunidade||'—'}</div>
+    </div>
+    <div class="card">
+      <div class="section-label">Preço sugerido de venda</div>
+      <div style="font-size:20px;font-weight:500;font-family:var(--mono);color:var(--accent)">${fmtP(d.preco_sugerido_venda)}</div>
+    </div>
+  </div>
+
+  <!-- Marketplaces -->
+  <div class="card" style="margin-bottom:10px">
+    <div class="section-label">preços nos marketplaces</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px">
+      ${(d.marketplaces||[]).map(m=>`
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px">
+        <div style="font-size:12px;font-weight:500;margin-bottom:4px">${m.nome}</div>
+        <div style="font-size:16px;font-weight:500;font-family:var(--mono);color:var(--warn)">${fmtP(m.preco_medio)}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">min ${fmtP(m.preco_min)} · max ${fmtP(m.preco_max)}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${m.entrega||''} · ${m.avaliacao||''} ★</div>
+        ${m.url_busca?`<a href="${m.url_busca}" target="_blank" style="font-size:10px;color:var(--accent);font-family:var(--mono);text-decoration:none">Ver ↗</a>`:''}
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Análise -->
+  ${d.analise?`<div class="card"><div class="section-label">análise de mercado</div><div style="font-size:13px;color:var(--muted2);line-height:1.7">${d.analise}</div></div>`:''}`;
+
+  document.getElementById('intel-panel-'+pais).innerHTML=html;
+}
 let imgBase64 = null;
 let imgMime = null;
 let ultimaIdentificacao = null;
