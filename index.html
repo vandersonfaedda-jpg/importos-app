@@ -732,6 +732,11 @@ async function fazerLogin(){
     document.getElementById('app-wrapper').style.display='block';
     document.getElementById('sidebar-user').textContent = d.nome + (d.perfil==='master'?' · MASTER':'');
     if(d.perfil==='master'||d.perfil==='admin') document.getElementById('nav-admin').style.display='flex';
+    // Garante que o dashboard esteja visível
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById('page-dashboard').classList.add('active');
+    document.querySelector('[onclick="showPage(\'dashboard\')"]')?.classList.add('active');
     loadDashboard();
   } catch(e){ mostrarErroLogin('Erro de conexão'); btn.textContent='Entrar'; }
 }
