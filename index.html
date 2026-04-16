@@ -163,7 +163,7 @@ select option{background:var(--surface2)}
   </div>
 </div>
 
-<div id="app-wrapper" style="display:none">
+<div id="app-wrapper" style="display:none;height:100vh;overflow:hidden">
 <div class="app">
   <!-- Sidebar -->
   <div class="sidebar">
@@ -729,7 +729,8 @@ async function fazerLogin(){
     if(!d.ok){ mostrarErroLogin(d.erro||'Credenciais inválidas'); btn.textContent='Entrar'; return; }
     usuarioLogado = d;
     document.getElementById('tela-login').style.display='none';
-    document.getElementById('app-wrapper').style.display='block';
+    document.getElementById('app-wrapper').style.display='flex';
+    document.getElementById('app-wrapper').style.flexDirection='column';
     document.getElementById('sidebar-user').textContent = d.nome + (d.perfil==='master'?' · MASTER':'');
     if(d.perfil==='master'||d.perfil==='admin') document.getElementById('nav-admin').style.display='flex';
     // Garante que o dashboard esteja visível
