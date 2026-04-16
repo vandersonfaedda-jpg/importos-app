@@ -573,24 +573,23 @@ select option{background:var(--surface2)}
     <!-- Mercados -->
     <div class="page" id="page-mercados">
       <div class="page-title">Preços nos Marketplaces</div>
-      <div class="page-sub">Pesquise preços nos principais marketplaces brasileiros</div>
+      <div class="page-sub">Pesquise preços por país — Brasil, EUA e Itália</div>
       <div class="card" style="margin-bottom:16px">
         <div class="section-label">buscar produto</div>
         <div style="display:flex;gap:8px">
-          <input type="text" id="mkt-query" placeholder="ex: organizador de ovos de plástico" style="flex:1" onkeydown="if(event.key==='Enter') buscarMercadosQuery()">
-          <button class="btn btn-primary" onclick="buscarMercadosQuery()">Pesquisar</button>
+          <input type="text" id="mkt-query" placeholder="ex: organizador de ovos de plástico" style="flex:1" onkeydown="if(event.key==='Enter') buscarTodosMercados()">
+          <button class="btn btn-primary" onclick="buscarTodosMercados()">Pesquisar todos</button>
         </div>
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          <span style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px">Marketplaces:</span>
-          <span class="meta-chip" style="background:#fff1;border-color:#ff6600;color:#ff6600">Mercado Livre</span>
-          <span class="meta-chip" style="background:#fff1;border-color:#e84393;color:#e84393">Shopee</span>
-          <span class="meta-chip" style="background:#fff1;border-color:#f60;color:#f60">Amazon BR</span>
-          <span class="meta-chip" style="background:#fff1;border-color:#2563eb;color:#2563eb">Magalu</span>
-          <span class="meta-chip" style="background:#fff1;border-color:#00a650;color:#00a650">Americanas</span>
+        <!-- Abas por país -->
+        <div style="display:flex;gap:4px;margin-top:16px;border-bottom:1px solid var(--border);padding-bottom:8px">
+          <button onclick="switchMktTab('BR')" id="mkt-tab-BR" style="font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--surface2);color:var(--accent);cursor:pointer">🇧🇷 Brasil</button>
+          <button onclick="switchMktTab('US')" id="mkt-tab-US" style="font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇺🇸 EUA</button>
+          <button onclick="switchMktTab('IT')" id="mkt-tab-IT" style="font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer">🇮🇹 Itália</button>
         </div>
       </div>
-      <div id="mkt-loading" style="display:none" class="loading"><span class="spinner"></span>pesquisando preços...</div>
-      <div id="mkt-results"></div>
+      <div id="mkt-panel-BR"><div class="empty" style="padding:30px">Pesquise um produto para ver preços no Brasil</div></div>
+      <div id="mkt-panel-US" style="display:none"><div class="empty" style="padding:30px">Pesquise um produto para ver preços nos EUA</div></div>
+      <div id="mkt-panel-IT" style="display:none"><div class="empty" style="padding:30px">Pesquise um produto para ver preços na Itália</div></div>
     </div>
 
     <!-- Inteligência por País -->
@@ -922,33 +921,97 @@ function renderRanking(data){
     const conf = calcularConfianca(s);
     const cat = inferirCategoria(s);
     const catLabel = {utensilios:'Utensílios',eletronicos:'Eletrônicos',vestuario:'Vestuário',outros:'Outros'}[cat]||cat;
+    const precoSug = parseFloat(s.preco_sugerido||0);
+    const nomeEsc = (s.nome||'').replace(/'/g,"\\'");
     return `
-    <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
-      <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0">${medalhas[i]}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.nome||'—'}</div>
-        <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
-          <span class="meta-chip" style="font-size:10px">${s.ncm}</span>
-          <span class="meta-chip" style="font-size:10px">${catLabel}</span>
-          <span class="meta-chip" style="font-size:10px">${(s.modal||'').replace('maritimo_','').toUpperCase()}</span>
-          <span class="meta-chip" style="font-size:10px">${Number(s.qtd||0).toLocaleString('pt-BR')} un</span>
+    <div style="background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px">
+        <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0">${medalhas[i]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.nome||'—'}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+            <span class="meta-chip" style="font-size:10px">${s.ncm}</span>
+            <span class="meta-chip" style="font-size:10px">${catLabel}</span>
+            <span class="meta-chip" style="font-size:10px">${(s.modal||'').replace('maritimo_','').toUpperCase()}</span>
+            <span class="meta-chip" style="font-size:10px">${Number(s.qtd||0).toLocaleString('pt-BR')} un</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:${roi>=0?'var(--accent)':'var(--danger)'}">ROI ${roi>=0?'+':''}${roi.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">score ${s.score||0}/100</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0;width:70px">
+          <div style="font-size:14px;color:${conf.color}">${conf.stars}</div>
+          <div style="font-size:10px;font-family:var(--mono);color:${conf.color}">${conf.label}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;min-width:120px">
+          <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">preço sugerido</div>
+          <div style="font-size:14px;font-weight:500;font-family:var(--mono);color:var(--warn)">${fmtBRL(precoSug)}</div>
+          <button onclick="buscarPrecosMercado('${nomeEsc}','rank-mkt-${i}')"
+            style="margin-top:4px;font-family:var(--mono);font-size:10px;padding:3px 8px;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:4px;cursor:pointer">
+            Ver preços ↗
+          </button>
         </div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:15px;font-weight:500;font-family:var(--mono);color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(1)}%</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">score ${s.score||0}/100</div>
-      </div>
-      <div style="text-align:center;flex-shrink:0;width:70px">
-        <div style="font-size:14px;color:${conf.color}">${conf.stars}</div>
-        <div style="font-size:10px;font-family:var(--mono);color:${conf.color}">${conf.label}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:13px;font-weight:500;font-family:var(--mono)">${fmtBRL(parseFloat(s.lucro_total||0))}</div>
-        <div style="font-size:10px;color:var(--muted)">lucro total</div>
+      <div id="rank-mkt-${i}" style="display:none;padding:0 12px 12px;border-top:1px solid var(--border)">
+        <div class="loading" style="padding:8px 0"><span class="spinner"></span>buscando...</div>
       </div>
     </div>`;
   }).join('');
 }
+
+async function buscarPrecosMercado(nome, targetId){
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  if(el.style.display==='block'){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="loading" style="padding:8px 0"><span class="spinner"></span>buscando preços nos 5 marketplaces...</div>';
+  try {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`,{
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({action:'mercados_pais', query:nome, pais:'BR'})
+    });
+    if(!resp.ok) throw new Error('Edge Function: '+resp.status);
+    const d = await resp.json();
+    if(d.error) throw new Error(d.error);
+    const mkts = d.marketplaces||[];
+    const precos = mkts.map(m=>parseFloat(m.preco_medio)||0).filter(p=>p>0);
+    const med = precos.length ? precos.reduce((a,b)=>a+b,0)/precos.length : 0;
+    const min = precos.length ? Math.min(...precos) : 0;
+    const max = precos.length ? Math.max(...precos) : 0;
+    const mktsHtml = mkts.map(m => {
+      const verLink = m.url_busca ? '<a href="'+m.url_busca+'" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none">Ver ↗</a>' : '';
+      return '<div style="background:var(--surface);border-left:3px solid '+(m.cor||'var(--border2)')+';border-radius:var(--radius-sm);padding:8px">'+
+        '<div style="font-size:11px;font-weight:500;margin-bottom:2px">'+m.nome+'</div>'+
+        '<div style="font-size:14px;font-family:var(--mono);font-weight:500;color:var(--warn)">'+fmtBRL(m.preco_medio)+'</div>'+
+        '<div style="font-size:10px;color:var(--muted)">min '+fmtBRL(m.preco_min)+' · max '+fmtBRL(m.preco_max)+'</div>'+
+        '<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">'+(m.avaliacao||'—')+' ★</div>'+
+        verLink+'</div>';
+    }).join('');
+    const resumoHtml = d.resumo ? '<div style="margin-top:8px;font-size:12px;color:var(--muted2);line-height:1.5">'+d.resumo+'</div>' : '';
+    el.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0">'+
+        '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:8px;text-align:center;border:1px solid var(--border)">'+
+          '<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">PREÇO MÉDIO</div>'+
+          '<div style="font-size:16px;font-weight:500;font-family:var(--mono);color:var(--accent)">'+fmtBRL(med)+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+precos.length+' marketplaces</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:8px;text-align:center;border:1px solid var(--border)">'+
+          '<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">MÍNIMO</div>'+
+          '<div style="font-size:16px;font-weight:500;font-family:var(--mono);color:var(--info)">'+fmtBRL(min)+'</div>'+
+        '</div>'+
+        '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:8px;text-align:center;border:1px solid var(--border)">'+
+          '<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">MÁXIMO</div>'+
+          '<div style="font-size:16px;font-weight:500;font-family:var(--mono);color:var(--warn)">'+fmtBRL(max)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px">'+mktsHtml+'</div>'+
+      resumoHtml;
+  } catch(e){
+    el.innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px">Erro: ${e.message}</div>`;
+  }
+}
+
 
 async function loadDashboard(){
   document.getElementById('dash-metrics').innerHTML='<div class="loading" style="grid-column:1/-1"><span class="spinner"></span>conectando...</div>';
@@ -1669,56 +1732,77 @@ function buscarMercados(){
 }
 
 // ===== MERCADOS =====
-async function buscarMercadosQuery(){
-  const query = document.getElementById('mkt-query').value.trim();
-  if(!query){ alert('Digite o nome do produto.'); return; }
+let mktTabAtual = 'BR';
 
-  document.getElementById('mkt-loading').style.display='block';
-  document.getElementById('mkt-results').innerHTML='';
+function switchMktTab(pais){
+  mktTabAtual = pais;
+  ['BR','US','IT'].forEach(p=>{
+    const tab = document.getElementById('mkt-tab-'+p);
+    const panel = document.getElementById('mkt-panel-'+p);
+    if(p===pais){
+      tab.style.borderColor='var(--accent)'; tab.style.color='var(--accent)'; tab.style.background='var(--surface2)';
+      panel.style.display='block';
+    } else {
+      tab.style.borderColor='var(--border2)'; tab.style.color='var(--muted)'; tab.style.background='transparent';
+      panel.style.display='none';
+    }
+  });
+}
 
+async function buscarMercadosPais(pais, query){
+  const panel = document.getElementById('mkt-panel-'+pais);
+  const nomes = {BR:'Brasil',US:'EUA',IT:'Itália'};
+  const moedas = {BR:'R$',US:'$',IT:'€'};
+  panel.innerHTML=`<div class="loading" style="padding:20px"><span class="spinner"></span>buscando preços no ${nomes[pais]}...</div>`;
   try {
-    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`, {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
-      body: JSON.stringify({ action:'mercados', query })
+      body: JSON.stringify({action:'mercados_pais', query, pais})
     });
-    if(!resp.ok) throw new Error('Erro na Edge Function: '+resp.status);
-    const parsed = await resp.json();
-    if(parsed.error) throw new Error(parsed.error);
-
-    document.getElementById('mkt-loading').style.display='none';
-    renderMercados(parsed);
+    if(!resp.ok) throw new Error('Edge Function: '+resp.status);
+    const d = await resp.json();
+    if(d.error) throw new Error(d.error);
+    panel.innerHTML = renderMercadosPais(d, moedas[pais]||'R$');
   } catch(e){
-    document.getElementById('mkt-loading').style.display='none';
-    document.getElementById('mkt-results').innerHTML=`<div class="card"><div style="color:var(--danger);font-size:13px">Erro: ${e.message}</div></div>`;
+    panel.innerHTML=`<div class="card"><div style="color:var(--danger);font-size:13px">Erro ${nomes[pais]}: ${e.message}</div></div>`;
   }
 }
 
-function renderMercados(data){
-  const fmtR = v => v ? 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-  const confColor = c => c==='alta'?'var(--accent)':c==='media'?'var(--warn)':'var(--danger)';
+async function buscarTodosMercados(){
+  const query = document.getElementById('mkt-query').value.trim();
+  if(!query){ alert('Digite o nome do produto.'); return; }
+  // Dispara os 3 em paralelo
+  Promise.all(['BR','US','IT'].map(p => buscarMercadosPais(p, query)));
+}
 
-  let html = `
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
+// Mantém compatibilidade com buscarMercados() chamado de outras páginas
+async function buscarMercadosQuery(){ buscarTodosMercados(); }
+
+function renderMercadosPais(data, simbolo){
+  const fmtP = v => v ? simbolo+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const confColor = c => c==='alta'?'var(--accent)':c==='media'?'var(--warn)':'var(--danger)';
+  return `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:12px">
     ${(data.marketplaces||[]).map(m=>`
     <div class="card" style="border-top:3px solid ${m.cor||'var(--border)'}">
-      <div style="font-size:13px;font-weight:500;margin-bottom:8px">${m.nome}</div>
-      <div style="font-size:20px;font-weight:500;font-family:var(--mono);color:var(--warn);margin-bottom:6px">${fmtR(m.preco_medio)}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">min ${fmtR(m.preco_min)} · max ${fmtR(m.preco_max)}</div>
-      <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:var(--mono)">
+      <div style="font-size:13px;font-weight:500;margin-bottom:6px">${m.nome}</div>
+      <div style="font-size:18px;font-weight:500;font-family:var(--mono);color:var(--warn);margin-bottom:4px">${fmtP(m.preco_medio)}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px">min ${fmtP(m.preco_min)} · max ${fmtP(m.preco_max)}</div>
+      <div style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-family:var(--mono)">
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">confiança</span><span style="color:${confColor(m.confiabilidade)}">${m.confiabilidade||'—'}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">entrega</span><span>${m.entrega||'—'}</span></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">vendedores</span><span>${m.num_vendedores||'—'}</span></div>
         <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">avaliação</span><span>${m.avaliacao||'—'} ★</span></div>
       </div>
-      ${m.destaque?`<div style="margin-top:8px;padding:6px;background:var(--surface2);border-radius:var(--radius-sm);font-size:11px;color:var(--muted2)">${m.destaque}</div>`:''}
-      ${m.url_busca?`<a href="${m.url_busca}" target="_blank" style="display:block;margin-top:8px;text-align:center;font-size:11px;font-family:var(--mono);color:${m.cor||'var(--accent)'};text-decoration:none">Ver no site ↗</a>`:''}
+      ${m.destaque?`<div style="margin-top:6px;padding:5px;background:var(--surface2);border-radius:var(--radius-sm);font-size:10px;color:var(--muted2)">${m.destaque}</div>`:''}
+      ${m.url_busca?`<a href="${m.url_busca}" target="_blank" style="display:block;margin-top:6px;text-align:center;font-size:10px;font-family:var(--mono);color:var(--accent);text-decoration:none">Ver ↗</a>`:''}
     </div>`).join('')}
   </div>
   ${data.resumo?`<div class="card"><div class="section-label">análise</div><div style="font-size:13px;color:var(--muted2);line-height:1.6">${data.resumo}</div></div>`:''}`;
-
-  document.getElementById('mkt-results').innerHTML = html;
 }
+
+
+  document.getElementById('mkt-panel-BR').innerHTML = renderMercadosPais(d, 'R$');
 </script>
 </body>
 </html>
