@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>importos</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -151,6 +151,14 @@ select option{background:var(--surface2)}
       <div class="nav-item" onclick="showPage('historico')">
         <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Histórico
+      </div>
+      <div class="nav-item" onclick="showPage('identificar')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 3V2M11 3V2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Identificar
+      </div>
+      <div class="nav-item" onclick="showPage('mercados')">
+        <svg class="nav-icon" fill="none" viewBox="0 0 16 16"><path d="M1 4h14M3 4V2h10v2M2 4l1 9h10l1-9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Mercados
       </div>
     </nav>
   </div>
@@ -418,13 +426,108 @@ select option{background:var(--surface2)}
       </div>
     </div>
 
+    <!-- Identificar por Imagem -->
+    <div class="page" id="page-identificar">
+      <div class="page-title">Identificar Produto</div>
+      <div class="page-sub">Envie uma imagem e a IA identifica o produto, sugere NCM e características</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div>
+          <div class="card">
+            <div class="section-label">imagem do produto</div>
+            <div id="img-drop-zone" style="border:2px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:12px" onclick="document.getElementById('img-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border2)'" ondrop="handleImgDrop(event)">
+              <div id="img-preview-wrap" style="display:none;margin-bottom:12px"><img id="img-preview" style="max-width:100%;max-height:200px;border-radius:var(--radius-sm);object-fit:contain"></div>
+              <div id="img-placeholder">
+                <svg width="32" height="32" fill="none" viewBox="0 0 32 32" style="margin:0 auto 8px;display:block;opacity:.4"><rect x="2" y="6" width="28" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="16" cy="16" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10 6V4M22 6V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <div style="font-size:13px;color:var(--muted)">Clique ou arraste uma imagem aqui</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)">JPG, PNG, WEBP</div>
+              </div>
+            </div>
+            <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImgSelect(event)">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" style="flex:1" onclick="identificarProduto()">Identificar produto</button>
+              <button class="btn" onclick="limparImg()">Limpar</button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:10px" id="img-result-card" style="display:none">
+            <div class="section-label">resultado da análise</div>
+            <div id="img-result-content" style="color:var(--muted);font-size:12px;font-family:var(--mono);padding:8px 0">aguardando análise...</div>
+          </div>
+        </div>
+        <div class="card" id="img-ncm-card">
+          <div class="section-label">dados identificados</div>
+          <div id="img-dados-empty" style="color:var(--muted);font-size:12px;font-family:var(--mono);padding:20px 0;text-align:center">identifique um produto para ver os dados aqui</div>
+          <div id="img-dados-content" style="display:none">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="form-group"><label>Descrição</label><input type="text" id="id-desc" readonly style="background:var(--surface3)"></div>
+              <div class="form-group"><label>NCM sugerido</label>
+                <div style="display:flex;gap:6px">
+                  <input type="text" id="id-ncm" readonly style="background:var(--surface3);flex:1">
+                  <a id="id-ncm-link" href="#" target="_blank" style="display:flex;align-items:center;padding:0 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--accent);font-size:11px;font-family:var(--mono);text-decoration:none;white-space:nowrap">Ver NCM ↗</a>
+                </div>
+              </div>
+              <div class="form-group"><label>Categoria</label><input type="text" id="id-cat" readonly style="background:var(--surface3)"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="form-group"><label>II estimado (%)</label><input type="text" id="id-ii" readonly style="background:var(--surface3)"></div>
+                <div class="form-group"><label>IPI estimado (%)</label><input type="text" id="id-ipi" readonly style="background:var(--surface3)"></div>
+              </div>
+              <div class="form-group"><label>Observações</label><textarea id="id-obs" readonly rows="3" style="background:var(--surface3);resize:none"></textarea></div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-primary" style="flex:1" onclick="usarNoDashboard()">Usar no Simulador</button>
+                <button class="btn" onclick="buscarMercados()">Ver preços ↗</button>
+              </div>
+              <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-align:center">⚠ NCM e alíquotas são sugestões da IA — confirme em ncm.fazcomex.com.br</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mercados -->
+    <div class="page" id="page-mercados">
+      <div class="page-title">Preços nos Marketplaces</div>
+      <div class="page-sub">Pesquise preços nos principais marketplaces brasileiros</div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-label">buscar produto</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="mkt-query" placeholder="ex: organizador de ovos de plástico" style="flex:1" onkeydown="if(event.key==='Enter') buscarMercadosQuery()">
+          <button class="btn btn-primary" onclick="buscarMercadosQuery()">Pesquisar</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px">Marketplaces:</span>
+          <span class="meta-chip" style="background:#fff1;border-color:#ff6600;color:#ff6600">Mercado Livre</span>
+          <span class="meta-chip" style="background:#fff1;border-color:#e84393;color:#e84393">Shopee</span>
+          <span class="meta-chip" style="background:#fff1;border-color:#f60;color:#f60">Amazon BR</span>
+          <span class="meta-chip" style="background:#fff1;border-color:#2563eb;color:#2563eb">Magalu</span>
+          <span class="meta-chip" style="background:#fff1;border-color:#00a650;color:#00a650">Americanas</span>
+        </div>
+      </div>
+      <div id="mkt-loading" style="display:none" class="loading"><span class="spinner"></span>pesquisando preços...</div>
+      <div id="mkt-results"></div>
+    </div>
+
   </div>
 </div>
 
 <script>
 const SUPA_URL = 'https://cxogqprgmdkbpmlcdorg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4b2dxcHJnbWRrYnBtbGNkb3JnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODg5MzksImV4cCI6MjA5MDY2NDkzOX0.URn4t-gh3mL8HpDUz78e_ec-B-neXukCZDTAr9OpSIs';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function sbGet(table, select='*', order='created_at.desc'){
+  const url = `${SUPA_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}&order=${order}`;
+  const r = await fetch(url, {headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Accept':'application/json'}});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function sbInsert(table, payload){
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body: JSON.stringify(payload)
+  });
+  if(!r.ok) throw new Error(await r.text());
+  return true;
+}
 
 // ---- Helpers ----
 const fmtBRL = v => 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -447,11 +550,16 @@ function showAlert(id, ms=3000){ const el=document.getElementById(id); el.classL
 
 // ---- Dashboard ----
 async function loadDashboard(){
-  const {data,error} = await sb.from('vw_historico_simulacoes').select('*');
-  if(error||!data){ document.getElementById('dash-metrics').innerHTML='<div class="empty">Erro ao carregar dados</div>'; return; }
+  let data;
+  try {
+    data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at');
+  } catch(e) {
+    document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1">Erro ao carregar: ${e.message}</div>`;
+    return;
+  }
   const lucro = data.reduce((a,s)=>a+(parseFloat(s.lucro_total)||0),0);
   const impostos = data.reduce((a,s)=>a+(parseFloat(s.total_impostos)||0),0);
-  const melhorRoi = data.length ? Math.max(...data.map(s=>parseFloat(s.roi_pct)||0)) : 0;
+  const melhorRoi = data.length ? Math.max(...data.map(s=>(parseFloat(s.roi)||0)*100)) : 0;
   const avgScore = data.length ? Math.round(data.reduce((a,s)=>a+(s.score||0),0)/data.length) : 0;
   document.getElementById('dash-metrics').innerHTML = `
     <div class="metric ${lucro>=0?'green':'danger'}">
@@ -474,23 +582,25 @@ async function loadDashboard(){
       <div class="metric-val" style="color:${avgScore>=50?'var(--accent)':avgScore>=25?'var(--warn)':'var(--danger)'}">${avgScore}<span style="font-size:13px;color:var(--muted)">/100</span></div>
       <div class="metric-sub">viabilidade geral</div>
     </div>`;
-  document.getElementById('dash-table').innerHTML = data.length ? data.map(s=>`
-    <tr>
+  document.getElementById('dash-table').innerHTML = data.length ? data.map(s=>{
+    const roi = parseFloat(s.roi||0)*100;
+    return `<tr>
       <td class="td-name">${s.nome||'—'}</td>
       <td><span class="badge badge-gray">${s.ncm||'—'}</span></td>
-      <td>${(s.modal||'—').replace('maritimo_','Marítimo ').replace('aereo','Aéreo')}</td>
+      <td>${(s.modal||'—').replace('maritimo_','Marítimo ').replace('aereo','Aéreo').toUpperCase()}</td>
       <td>${Number(s.qtd||0).toLocaleString('pt-BR')}</td>
-      <td><span class="badge ${parseFloat(s.roi_pct)>=0?'badge-pos':'badge-neg'}">${fmtPct(parseFloat(s.roi_pct)||0)}</span></td>
+      <td><span class="badge ${roi>=0?'badge-pos':'badge-neg'}">${fmtPct(roi)}</span></td>
       <td><span class="badge ${(s.score||0)>=50?'badge-pos':(s.score||0)>=25?'badge-warn':'badge-neg'}">${s.score||0}/100</span></td>
       <td style="color:${parseFloat(s.lucro_total)>=0?'var(--accent)':'var(--danger)'}">${fmtBRL(parseFloat(s.lucro_total)||0)}</td>
       <td><span class="badge badge-info">${s.status||'—'}</span></td>
-    </tr>`).join('') : '<tr><td colspan="8"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
+    </tr>`;}).join('') : '<tr><td colspan="8"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
 }
 
 // ---- Produtos ----
 async function loadProdutos(){
-  const {data,error} = await sb.from('produtos').select('*').order('created_at',{ascending:false});
-  if(error||!data){ document.getElementById('prod-table').innerHTML='<tr><td colspan="6"><div class="empty">Erro ao carregar</div></td></tr>'; return; }
+  let data;
+  try { data = await sbGet('produtos','id,descricao,ncm,cat,fob,peso'); }
+  catch(e) { document.getElementById('prod-table').innerHTML=`<tr><td colspan="6"><div class="empty">Erro: ${e.message}</div></td></tr>`; return; }
   document.getElementById('prod-table').innerHTML = data.length ? data.map(p=>`
     <tr>
       <td class="td-name">${p.descricao||'—'}</td>
@@ -507,16 +617,16 @@ async function salvarProduto(){
   const ncm=document.getElementById('p-ncm').value.trim();
   if(!desc||!ncm){alert('Preencha ao menos descrição e NCM');return;}
   if(!/^\d{8}$/.test(ncm)){alert('NCM deve ter exatamente 8 dígitos');return;}
-  const {error} = await sb.from('produtos').insert({
-    user_id:'47cecaec-ccf6-425a-83d6-2430e4d852e9',
-    descricao:desc, ncm, cat:document.getElementById('p-cat').value,
-    fob:parseFloat(document.getElementById('p-fob').value)||null,
-    peso:parseFloat(document.getElementById('p-peso').value)||null,
-    comp:parseFloat(document.getElementById('p-comp').value)||null,
-    larg:parseFloat(document.getElementById('p-larg').value)||null,
-    alt:parseFloat(document.getElementById('p-alt').value)||null
-  });
-  if(error){showAlert('prod-alert-err');return;}
+  try {
+    await sbInsert('produtos', {
+      descricao:desc, ncm, cat:document.getElementById('p-cat').value,
+      fob:parseFloat(document.getElementById('p-fob').value)||null,
+      peso:parseFloat(document.getElementById('p-peso').value)||null,
+      comp:parseFloat(document.getElementById('p-comp').value)||null,
+      larg:parseFloat(document.getElementById('p-larg').value)||null,
+      alt:parseFloat(document.getElementById('p-alt').value)||null
+    });
+  } catch(e) { console.error(e); showAlert('prod-alert-err'); return; }
   showAlert('prod-alert-ok');
   ['p-desc','p-ncm','p-fob','p-peso','p-comp','p-larg','p-alt'].forEach(id=>document.getElementById(id).value='');
   loadProdutos();
@@ -532,22 +642,24 @@ function preencherSim(p){
 
 // ---- Histórico ----
 async function loadHistorico(){
-  const {data,error} = await sb.from('vw_historico_simulacoes').select('*');
-  if(error||!data){ document.getElementById('hist-table').innerHTML='<tr><td colspan="11"><div class="empty">Erro ao carregar</div></td></tr>'; return; }
-  document.getElementById('hist-table').innerHTML = data.length ? data.map(s=>`
-    <tr>
+  let data;
+  try { data = await sbGet('simulacoes','id,nome,ncm,modal,origem,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,preco_minimo,lucro_total,total_impostos,status,created_at'); }
+  catch(e) { document.getElementById('hist-table').innerHTML=`<tr><td colspan="11"><div class="empty">Erro: ${e.message}</div></td></tr>`; return; }
+  document.getElementById('hist-table').innerHTML = data.length ? data.map(s=>{
+    const roi = parseFloat(s.roi||0)*100;
+    return `<tr>
       <td>${fmtDate(s.created_at)}</td>
       <td class="td-name">${s.nome||'—'}</td>
       <td><span class="badge badge-gray">${s.ncm||'—'}</span></td>
       <td>${(s.modal||'—').replace('maritimo_','').replace('aereo','Aéreo').toUpperCase()}</td>
       <td>${Number(s.qtd||0).toLocaleString('pt-BR')}</td>
-      <td><span class="badge ${parseFloat(s.roi_pct)>=0?'badge-pos':'badge-neg'}">${fmtPct(parseFloat(s.roi_pct)||0)}</span></td>
+      <td><span class="badge ${roi>=0?'badge-pos':'badge-neg'}">${fmtPct(roi)}</span></td>
       <td><span class="badge ${(s.score||0)>=50?'badge-pos':(s.score||0)>=25?'badge-warn':'badge-neg'}">${s.score||0}</span></td>
       <td>${fmtBRL(parseFloat(s.preco_sugerido)||0)}</td>
       <td style="color:${parseFloat(s.lucro_total)>=0?'var(--accent)':'var(--danger)'}">${fmtBRL(parseFloat(s.lucro_total)||0)}</td>
       <td style="color:var(--warn)">${fmtBRL(parseFloat(s.total_impostos)||0)}</td>
       <td><span class="badge badge-info">${s.status||'—'}</span></td>
-    </tr>`).join('') : '<tr><td colspan="11"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
+    </tr>`;}).join('') : '<tr><td colspan="11"><div class="empty">Nenhuma simulação encontrada</div></td></tr>';
 }
 
 // ---- Simulador ----
@@ -676,14 +788,28 @@ function calcular(){
 async function salvarSimulacao(){
   if(!ultimoCalculo){ alert('Calcule primeiro antes de salvar.'); return; }
   const nome = document.getElementById('s-nome').value.trim() || 'Simulação sem nome';
-  const {error} = await sb.from('simulacoes').insert({
-    user_id: '47cecaec-ccf6-425a-83d6-2430e4d852e9',
-    nome, ...ultimoCalculo,
+  const payload = {
+    nome,
+    ncm: ultimoCalculo.ncm,
+    modal: ultimoCalculo.modal,
+    origem: ultimoCalculo.origem,
+    uf_destino: ultimoCalculo.uf_destino,
+    qtd: ultimoCalculo.qtd,
+    fob_unit: ultimoCalculo.fob_unit,
+    cambio: ultimoCalculo.cambio,
     roi: ultimoCalculo.roi_pct / 100,
+    score: ultimoCalculo.score,
+    preco_sugerido: ultimoCalculo.preco_sugerido,
+    preco_minimo: ultimoCalculo.preco_minimo,
+    lucro_total: ultimoCalculo.lucro_total,
+    custo_total: ultimoCalculo.custo_total,
+    total_impostos: ultimoCalculo.total_impostos,
     status: 'concluida',
     dados: ultimoCalculo.dados
-  });
-  if(error){ console.error(error); showAlert('sim-alert-err'); return; }
+  };
+  try {
+    await sbInsert('simulacoes', payload);
+  } catch(e) { console.error(e); showAlert('sim-alert-err'); return; }
   showAlert('sim-alert-ok');
 }
 
@@ -697,6 +823,156 @@ function limparSim(){
 
 // Init
 loadDashboard();
+
+// ===== IDENTIFICAR POR IMAGEM =====
+let imgBase64 = null;
+let imgMime = null;
+let ultimaIdentificacao = null;
+
+function handleImgSelect(e){
+  const file = e.target.files[0];
+  if(file) loadImgFile(file);
+}
+function handleImgDrop(e){
+  e.preventDefault();
+  document.getElementById('img-drop-zone').style.borderColor='var(--border2)';
+  const file = e.dataTransfer.files[0];
+  if(file) loadImgFile(file);
+}
+function loadImgFile(file){
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    imgBase64 = result.split(',')[1];
+    imgMime = file.type || 'image/jpeg';
+    document.getElementById('img-preview').src = result;
+    document.getElementById('img-preview-wrap').style.display='block';
+    document.getElementById('img-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function limparImg(){
+  imgBase64=null; imgMime=null; ultimaIdentificacao=null;
+  document.getElementById('img-preview-wrap').style.display='none';
+  document.getElementById('img-placeholder').style.display='block';
+  document.getElementById('img-input').value='';
+  document.getElementById('img-result-content').textContent='aguardando análise...';
+  document.getElementById('img-dados-empty').style.display='block';
+  document.getElementById('img-dados-content').style.display='none';
+}
+
+async function identificarProduto(){
+  if(!imgBase64){ alert('Selecione uma imagem primeiro.'); return; }
+  const rc = document.getElementById('img-result-content');
+  rc.innerHTML = '<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px"></span>analisando imagem...';
+  document.getElementById('img-dados-empty').style.display='block';
+  document.getElementById('img-dados-content').style.display='none';
+
+  try {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({
+        action:'identificar',
+        image_base64: imgBase64,
+        image_mime: imgMime
+      })
+    });
+    if(!resp.ok) throw new Error('Erro na Edge Function: '+resp.status);
+    let parsed;
+    try { parsed = await resp.json(); } catch(e){ throw new Error('Resposta inválida da IA'); }
+    if(parsed.error) throw new Error(parsed.error);
+    ultimaIdentificacao = parsed;
+
+    rc.innerHTML = `<span style="color:var(--accent)">✓</span> Produto identificado com confiança <span style="color:${parsed.confianca==='alta'?'var(--accent)':parsed.confianca==='media'?'var(--warn)':'var(--danger)'}">${parsed.confianca}</span>`;
+
+    document.getElementById('id-desc').value = parsed.descricao || '';
+    document.getElementById('id-ncm').value = parsed.ncm || '';
+    document.getElementById('id-cat').value = parsed.categoria || '';
+    document.getElementById('id-ii').value = parsed.ii_estimado ? parsed.ii_estimado+'%' : '—';
+    document.getElementById('id-ipi').value = parsed.ipi_estimado ? parsed.ipi_estimado+'%' : '—';
+    document.getElementById('id-obs').value = [
+      parsed.ncm_descricao ? 'NCM: '+parsed.ncm_descricao : '',
+      parsed.caracteristicas?.length ? 'Características: '+parsed.caracteristicas.join(', ') : '',
+      parsed.observacoes || ''
+    ].filter(Boolean).join('\n');
+    const ncmLink = document.getElementById('id-ncm-link');
+    ncmLink.href = `https://ncm.fazcomex.com.br/${parsed.ncm}`;
+
+    document.getElementById('img-dados-empty').style.display='none';
+    document.getElementById('img-dados-content').style.display='block';
+  } catch(e){
+    rc.innerHTML = `<span style="color:var(--danger)">Erro: ${e.message}</span>`;
+  }
+}
+
+function usarNoDashboard(){
+  if(!ultimaIdentificacao) return;
+  showPage('simulador');
+  if(ultimaIdentificacao.descricao) document.getElementById('s-nome').value = ultimaIdentificacao.descricao;
+  if(ultimaIdentificacao.ncm) document.getElementById('s-ncm').value = ultimaIdentificacao.ncm;
+  if(ultimaIdentificacao.ii_estimado) document.getElementById('s-ii').value = ultimaIdentificacao.ii_estimado;
+  if(ultimaIdentificacao.ipi_estimado) document.getElementById('s-ipi').value = ultimaIdentificacao.ipi_estimado;
+}
+
+function buscarMercados(){
+  if(!ultimaIdentificacao) return;
+  document.getElementById('mkt-query').value = ultimaIdentificacao.descricao || '';
+  showPage('mercados');
+  buscarMercadosQuery();
+}
+
+// ===== MERCADOS =====
+async function buscarMercadosQuery(){
+  const query = document.getElementById('mkt-query').value.trim();
+  if(!query){ alert('Digite o nome do produto.'); return; }
+
+  document.getElementById('mkt-loading').style.display='block';
+  document.getElementById('mkt-results').innerHTML='';
+
+  try {
+    const resp = await fetch(`${SUPA_URL}/functions/v1/importos-ai`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPA_KEY},
+      body: JSON.stringify({ action:'mercados', query })
+    });
+    if(!resp.ok) throw new Error('Erro na Edge Function: '+resp.status);
+    const parsed = await resp.json();
+    if(parsed.error) throw new Error(parsed.error);
+
+    document.getElementById('mkt-loading').style.display='none';
+    renderMercados(parsed);
+  } catch(e){
+    document.getElementById('mkt-loading').style.display='none';
+    document.getElementById('mkt-results').innerHTML=`<div class="card"><div style="color:var(--danger);font-size:13px">Erro: ${e.message}</div></div>`;
+  }
+}
+
+function renderMercados(data){
+  const fmtR = v => v ? 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const confColor = c => c==='alta'?'var(--accent)':c==='media'?'var(--warn)':'var(--danger)';
+
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:16px">
+    ${(data.marketplaces||[]).map(m=>`
+    <div class="card" style="border-top:3px solid ${m.cor||'var(--border)'}">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">${m.nome}</div>
+      <div style="font-size:20px;font-weight:500;font-family:var(--mono);color:var(--warn);margin-bottom:6px">${fmtR(m.preco_medio)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px">min ${fmtR(m.preco_min)} · max ${fmtR(m.preco_max)}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-family:var(--mono)">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">confiança</span><span style="color:${confColor(m.confiabilidade)}">${m.confiabilidade||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">entrega</span><span>${m.entrega||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">vendedores</span><span>${m.num_vendedores||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">avaliação</span><span>${m.avaliacao||'—'} ★</span></div>
+      </div>
+      ${m.destaque?`<div style="margin-top:8px;padding:6px;background:var(--surface2);border-radius:var(--radius-sm);font-size:11px;color:var(--muted2)">${m.destaque}</div>`:''}
+      ${m.url_busca?`<a href="${m.url_busca}" target="_blank" style="display:block;margin-top:8px;text-align:center;font-size:11px;font-family:var(--mono);color:${m.cor||'var(--accent)'};text-decoration:none">Ver no site ↗</a>`:''}
+    </div>`).join('')}
+  </div>
+  ${data.resumo?`<div class="card"><div class="section-label">análise</div><div style="font-size:13px;color:var(--muted2);line-height:1.6">${data.resumo}</div></div>`:''}`;
+
+  document.getElementById('mkt-results').innerHTML = html;
+}
 </script>
 </body>
 </html>
