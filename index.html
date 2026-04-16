@@ -947,11 +947,18 @@ function renderRanking(data){
 }
 
 async function loadDashboard(){
+  document.getElementById('dash-metrics').innerHTML='<div class="loading" style="grid-column:1/-1"><span class="spinner"></span>conectando...</div>';
   let data;
   try {
     data = await sbGet('simulacoes','id,nome,ncm,modal,uf_destino,qtd,fob_unit,cambio,roi,score,preco_sugerido,lucro_total,total_impostos,status,created_at');
   } catch(e) {
-    document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1">Erro ao carregar: ${e.message}</div>`;
+    document.getElementById('dash-metrics').innerHTML=`<div class="empty" style="grid-column:1/-1;color:var(--danger)">Erro: ${e.message}</div>`;
+    document.getElementById('ranking-list').innerHTML=`<div style="color:var(--danger);font-size:12px;padding:8px">Erro ao carregar: ${e.message}</div>`;
+    return;
+  }
+  if(!data || data.length===0){
+    document.getElementById('dash-metrics').innerHTML='<div class="empty" style="grid-column:1/-1">Nenhuma simulação encontrada</div>';
+    document.getElementById('ranking-list').innerHTML='<div class="empty" style="padding:20px">Nenhuma simulação salva ainda</div>';
     return;
   }
   todasSimulacoes = data;
