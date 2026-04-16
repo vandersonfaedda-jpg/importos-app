@@ -1121,6 +1121,33 @@ function selecionarSimulacao(id){
     item.style.background='var(--surface2)';
   }
 
+  // Atualiza métricas para o item selecionado
+  const s = simSelecionada;
+  const roi = parseFloat(s.roi||0)*100;
+  const conf = calcularConfianca(s);
+  const scoreColor = (s.score||0)>=60?'var(--accent)':(s.score||0)>=35?'var(--warn)':'var(--danger)';
+  document.getElementById('dash-metrics').innerHTML = `
+    <div class="metric ${roi>=0?'green':'danger'}">
+      <div class="metric-label">ROI — ${s.nome||'produto'}</div>
+      <div class="metric-val" style="color:${roi>=0?'var(--accent)':'var(--danger)'}">${roi>=0?'+':''}${roi.toFixed(2)}%</div>
+      <div class="metric-sub">${(s.modal||'').replace('maritimo_','').toUpperCase()} · ${Number(s.qtd||0).toLocaleString('pt-BR')} un</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-label">lucro total</div>
+      <div class="metric-val" style="color:var(--accent)">${fmtBRL(parseFloat(s.lucro_total)||0)}</div>
+      <div class="metric-sub">preço sugerido ${fmtBRL(parseFloat(s.preco_sugerido)||0)}</div>
+    </div>
+    <div class="metric warn">
+      <div class="metric-label">impostos</div>
+      <div class="metric-val" style="color:var(--warn)">${fmtBRL(parseFloat(s.total_impostos)||0)}</div>
+      <div class="metric-sub">II + IPI + ICMS + PIS/COFINS</div>
+    </div>
+    <div class="metric ${(s.score||0)>=50?'green':(s.score||0)>=25?'warn':'danger'}">
+      <div class="metric-label">score de viabilidade</div>
+      <div class="metric-val" style="color:${scoreColor}">${s.score||0}<span style="font-size:13px;color:var(--muted)">/100</span></div>
+      <div class="metric-sub" style="color:${conf.color}">${conf.stars} ${conf.label}</div>
+    </div>`;
+
   renderDetalhe(simSelecionada);
 }
 
